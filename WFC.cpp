@@ -52,7 +52,7 @@ void initializeRandomSeed() {
     std::srand(std::time(0));
 }
 int getRandom(int min, int max) {
-    std::cout << "numero aleatorio entre: " << min << " " << max << std::endl;
+    //std::cout << "numero aleatorio entre: " << min << " " << max << std::endl;
     //static std::mt19937 rnd(std::chrono::steady_clock::now().time_since_epoch().count());
     //std::uniform_int_distribution<int> distr(min, max);
     //return distr(rnd);
@@ -115,11 +115,6 @@ std::vector<std::vector<int>> collapseTile(std::vector<std::vector<int>> unColla
         selectedID = id;
     else
         selectedID = unCollapseMap[id][getRandom(0, unCollapseMap[id].size())];
-    std::cout << "opciones para colapsar: ";
-    for (int i = 0; i < unCollapseMap[id].size(); i++) {
-        std::cout << unCollapseMap[id][i] << " ";
-    }
-    std::cout << "Selected: "<< selectedID  << std::endl;
 
     unCollapseMap[id].clear();
     unCollapseMap[id].push_back(selectedID);
@@ -156,7 +151,7 @@ int selectLowestEntropyTile(std::vector<std::vector<int>> unCollapseMap) {
         }
     }
     if (lowestID == -1) {
-        std::cout << "selección aleatoria----------------------------------------------------" << std::endl;
+        //std::cout << "selección aleatoria----------------------------------------------------" << std::endl;
         lowestID = getRandom(0, unCollapseMap.size());
     }
     return lowestID;
@@ -190,6 +185,8 @@ int main(int argc, char* argv[]) {
     file.read(reinterpret_cast<char*>(pixelVector.data()), sizeof(Pixel) * pixelVector.size());
     file.close();
 
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     //division y guardado del vector original en vectores que actuaran como casillas
     std::vector<Pixel> tmpVector;
     std::vector<Tile> tilesArray;
@@ -212,7 +209,6 @@ int main(int argc, char* argv[]) {
     }
 
     //definición de vecinos dentro de una matriz, -1 indica "sin vecino"
-    //modificar con restriccion
     int max = sqrt(tilesArray.size());
     for (int i = 0; i < max; i++) {
         for (int j = 0; j < max; j++) {
@@ -252,23 +248,22 @@ int main(int argc, char* argv[]) {
             unCollapseMap[i].push_back(j);
         }
     }
-    //implementacion basica de WFC
     int lowestEntropyTile;
     while (!mapCompleted (unCollapseMap)) {
         
         //seleccionar, buscar la casilla con la menor entropia posible
         lowestEntropyTile = selectLowestEntropyTile(unCollapseMap);
-        std::cout << "seleccionar : " << lowestEntropyTile  << std::endl;
+        //std::cout << "seleccionar : " << lowestEntropyTile  << std::endl;
        
         //colapsar
-        std::cout << "Colapsar" << std::endl;
+        //std::cout << "Colapsar" << std::endl;
         unCollapseMap = collapseTile(unCollapseMap, tilesArray, lowestEntropyTile);
-        printCollapsedTile(unCollapseMap, inputImageWidth / size);
+        //printCollapsedTile(unCollapseMap, inputImageWidth / size);
 
         //propagar
-        std::cout << "propagar" << std::endl;
+        //std::cout << "propagar" << std::endl;
         unCollapseMap = propagateTile(unCollapseMap, tilesArray, lowestEntropyTile);
-        printCollapsedTile(unCollapseMap, inputImageWidth / size);
+        //printCollapsedTile(unCollapseMap, inputImageWidth / size);
     }
 
     std::vector<Tile> newTilesArray;
@@ -298,5 +293,9 @@ int main(int argc, char* argv[]) {
     output_file.write(reinterpret_cast<char*>(pixelVectorSalida.data()), sizeof(Pixel) * pixelVectorSalida.size());
     output_file.close();
     
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::cout << "Tiempo de ejecución: " << duration << " ms" << std::endl;
+
     return 0;
 }
