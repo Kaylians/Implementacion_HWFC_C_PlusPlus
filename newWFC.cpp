@@ -163,11 +163,13 @@ bool comparePattern(const Pattern& a, const Pattern& b) {
 void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const int inputImageHeight, const int inputImageWidth, int N){
     std::vector<Pixel> tmpVector;
     //seperacion de la imagen en multiples patrones
-    for (int y = 0; y <= inputImageHeight - N; y++)
-        for (int x = 0; x <= inputImageWidth - N; x++) {
+    //for (int y = 0; y <= inputImageHeight - N; y++)
+        for (int x = 0; x <= inputImageWidth * inputImageHeight - (inputImageWidth*(N-1))-N; x++) {
             for (int i = 0; i < N; i++)
-                for (int j = 0; j < N; j++)
-                    tmpVector.push_back(pixelVector[(x + j) + (y + i) * N]);
+                for (int j = 0; j < N; j++) {
+                    tmpVector.push_back(pixelVector[(x + j + i * inputImageWidth)]);
+                }
+            
             Pattern newPattern(pattArray.size(), N);
             newPattern.addPixelVector(tmpVector);
             pattArray.push_back(newPattern);
@@ -196,6 +198,7 @@ void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& p
         }
     pattArray.clear();
     pattArray = tmpPattArray;
+    std::cout << "Patrones totales obtenidos de la imagen: " << pattArray.size() << std::endl;
 
     std::sort(pattArray.begin(), pattArray.end(), comparePattern);
 
@@ -381,6 +384,43 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     return true;
 }
 
+void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y) {
+    int lenght = pattern.front().size;
+    int wAmount = lenght * 10 + 10;
+
+    Pixel pixelNegro = { 0,0,0 };
+
+    int Width = 0;
+
+    do {
+        Width++;
+    } while (Width*Width < pattern.size());
+    
+    int z = 0;
+    Y = lenght * Width + Width;
+    do {
+        for (int x = 0; x < lenght; x++) {
+            for (int j = 0; j < Width; j++) {
+                for (int i = 0; i < lenght; i++) {
+                    if ((z * Width + j) < pattern.size()) {
+                        pixelVector.push_back(pattern[z * Width + j].pixeles[x * lenght + i]);
+                    }
+                    else {
+                        pixelVector.push_back(pixelNegro);
+                    }
+                }
+                pixelVector.push_back(pixelNegro);
+            }
+        }
+        for (int i = 0; i < lenght * Width + Width; i++) {
+            pixelVector.push_back(pixelNegro);
+        }
+        z++;
+    } while (Width > z);
+    
+    
+}
+
 int main(int argc, char* argv[]) {
     //1 image.ppm
     initializeRandomSeed();
@@ -390,7 +430,7 @@ int main(int argc, char* argv[]) {
     int inputImageWidth, inputImageHeight;
     int N = std::atoi(argv[2]);
     int Y = std::atoi(argv[3]);
-    std::vector<Pixel> pixelVector, pixelVectorSalida;
+    std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida;
     //lectura de la imagen de entrada
     if (readImagePPM(imageName, inputImageWidth, inputImageHeight, pixelVector)) {
         std::cout << "Imagen PPM leída exitosamente." << std::endl;
@@ -406,13 +446,14 @@ int main(int argc, char* argv[]) {
     std::vector<Pattern> patternArray;
     definePatterns(patternArray, pixelVector, inputImageHeight, inputImageWidth, N);
 
+
     //mapa de superposiciones posibles
     std::vector<std::vector<int>> unCollapseMap;
     initializePosMap(unCollapseMap, PosibleTiles, Y);
-
     int lowestEntropyTilePos;
     //inicio del algoritmo WFC
-    while (!mapCompleted(unCollapseMap)) {
+   /*
+   while (!mapCompleted(unCollapseMap)) {
 
         //seleccionar, buscar la casilla con la menor entropia posible
         lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size());
@@ -428,6 +469,7 @@ int main(int argc, char* argv[]) {
 
         //break;
     }
+   */ 
     
     std::cout <<"posible pixel color: " << PosibleTiles.size() << std::endl;
     //construccion de una nueva imagen
@@ -435,6 +477,12 @@ int main(int argc, char* argv[]) {
 
     //guardado de la imagen en un nuevo archivo
     if (writeImagePPM("imagen_Generada.ppm", Y, Y, pixelVectorSalida)) {
+        std::cout << "Imagen PPM escrita exitosamente." << std::endl;
+    }
+
+
+    createPatternDraw(patternArray, patterVectorSalida, Y);
+    if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }
     //fin del cronometro del tiempo de ejecucion
