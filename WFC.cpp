@@ -1,3 +1,4 @@
+// cd /mnt/d/Memoria\ HWFC/Code/test2/src
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -14,189 +15,88 @@
 
 #include "WFC.h"
 #include "Pixel.h"
+#include <thread>
 
-class Tile {
+//colores de prueba
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define WHITE    "\033[37m"
+#define PURPLE "\033[35m"
+
+class Pattern {
 public:
     int id;
-    int size;
+    int N;
+    int weight;
     bool pattern = true;
-    int idPattern = id;
-
     std::vector<Pixel> pixeles;
-    std::vector<Pixel> tmpPixeles;
-
-    std::vector<int> id_N;
-    std::vector<int> id_S;
-    std::vector<int> id_E;
-    std::vector<int> id_W;
-
+    std::vector<int> pixelesCoo;
+    std::vector<int> coordinate;
     //constructor
-    Tile(int id, int size) : id(id), size(size) {}
-    bool comparePattern2(const std::vector<Pixel>& tile1) {
+    Pattern(int id, int N) : id(id), N(N) {}
+    bool comparePixelPattern(const std::vector<Pixel>& otherPixeles) {
 
-        if (tile1.size() != pixeles.size()) {
+        if (otherPixeles.size() != pixeles.size()) {
             std::cout << "Error, tamaño de tiles no compatible" << std::endl;
             return false;
         }
 
-        return tile1 == pixeles;
+        return otherPixeles == pixeles;
     }
+    bool compareCooPattern(const std::vector<int>& otherPixeles) {
+
+        if (otherPixeles.size() != pixelesCoo.size()) {
+            std::cout << "Error, tamaño de tiles no compatible" << std::endl;
+            return false;
+        }
+
+        return otherPixeles == pixelesCoo;
+    }
+
 
     void addPixelVector(std::vector<Pixel> newPixeles) {
         pixeles = newPixeles;
     }
-    void rotateToRigth() {
-        for (int i = 0; i < size; i++) {
-            for (int j = size - 1; j >= 0; j--) {
-                tmpPixeles.push_back(pixeles[i + j * size]);
-            }
-        }
-        pixeles = tmpPixeles;
-    }
-    void rotateToLeft() {
-        for (int i = size - 1; i >= 0; i--) {
-            for (int j = 0; j < size; j++) {
-                tmpPixeles.push_back(pixeles[i + j * size]);
-            }
-        }
-        pixeles = tmpPixeles;
+    void addPixelCooVector(std::vector<int> newPixeles) {
+        pixelesCoo = newPixeles;
     }
 };
-
-bool comparePattern(const std::vector<Pixel>& tile1, const std::vector<Pixel>& tile2) {
-
-    if (tile1.size() != tile2.size()) {
-        std::cout << "Error, tamaño de tiles no compatible" << std::endl;
-        return false;
-    }
-
-    return tile1 == tile2;
-}
-
+class Backtracking {
+public:
+    int step;
+    Pattern selectedPatt;
+    std::vector<std::vector<int>> cMap;
+    std::vector<int> RRC;
+    Backtracking(int step, Pattern selectedPatt, std::vector<std::vector<int>> cMap, std::vector<int> RRC) :
+        step(step), selectedPatt(selectedPatt), cMap(cMap), RRC(RRC) {}
+};
+//funcion para inicializar la generación de numeros aleatorios
 void initializeRandomSeed() {
     std::srand(std::time(0));
 }
+//funcion para obtener numeros aleatorios con min y max
 int getRandom(int min, int max) {
-    //std::cout << "numero aleatorio entre: " << min << " " << max << std::endl;
-    //static std::mt19937 rnd(std::chrono::steady_clock::now().time_since_epoch().count());
-    //std::uniform_int_distribution<int> distr(min, max);
-    //return distr(rnd);
     int rnd = 0;
     rnd = std::rand() % max;
     return rnd;
 }
-bool mapCompleted(std::vector<std::vector<int>> unCollapseMap) {
+//funcion random para elegir el patron que más se repite
+int getRandomPatternWeighted(const std::vector<Pattern> pattern) {
 
-    for (int i = 0; i < unCollapseMap.size(); i++) {
-        if (unCollapseMap[i].size() != 1) {
-            return false;
-        }
+    std::vector<double> pesos(pattern.size());
+    for (size_t i = 0; i < pattern.size(); i++) {
+        pesos[i] = pattern[i].weight;
     }
-    return true;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::discrete_distribution<int> distribution(pesos.begin(), pesos.end());
+    return distribution(gen);
 }
-
-void propagateTile(std::vector<std::vector<int>>& unCollapseMap, std::vector<Tile> tilesArray, int pos) {
-    int max = sqrt(unCollapseMap.size());
-    int id = unCollapseMap[pos].front(), patternID;
-
-    if (tilesArray[id].pattern)
-        patternID = tilesArray[id].id;
-    else
-        patternID = tilesArray[id].idPattern;
-
-    id = patternID;
-
-    std::cout << "Arriba " << tilesArray[id].id_N.size() << std::endl;
-    //Arriba
-    if (pos - max > 0 ) 
-        if (unCollapseMap[pos - max].size() > 1) {
-            unCollapseMap[pos - max].clear();
-            unCollapseMap[pos - max].resize(tilesArray[id].id_N.size());
-            unCollapseMap[pos - max] = tilesArray[id].id_N;
-        }
-    //Abajo
-    std::cout << "Abajo " << tilesArray[id].id_S.size() << std::endl;
-    if (pos + max < unCollapseMap.size())
-        if (unCollapseMap[pos + max].size() > 1) {
-            unCollapseMap[pos + max].clear();
-            unCollapseMap[pos + max].resize(tilesArray[id].id_S.size());
-            unCollapseMap[pos + max] = tilesArray[id].id_S;
-        }
-    //Derecha
-    std::cout << "Izquierda " << tilesArray[id].id_W.size() << std::endl;
-    if ((pos % max) > 0)
-        if (unCollapseMap[pos - 1].size() > 1) {
-            unCollapseMap[pos - 1].clear();
-            unCollapseMap[pos - 1].resize(tilesArray[id].id_W.size());
-            unCollapseMap[pos - 1] = tilesArray[id].id_W;
-        }
-    //Izquierda
-    std::cout << "Derecha " << tilesArray[id].id_E.size() << std::endl;
-    if ((pos % max) != max - 1) 
-        if (unCollapseMap[pos + 1].size() > 1) {
-            unCollapseMap[pos + 1].clear();
-            unCollapseMap[pos + 1].resize(tilesArray[id].id_E.size());
-            unCollapseMap[pos + 1] = tilesArray[id].id_E;
-        }
-}
-
-void collapseTile(std::vector<std::vector<int>>& unCollapseMap, std::vector<Tile> tilesArray, int tilePos) {
-    int selectedID, pos;
-    
-    do {
-        if (selectedID == -1) {
-            if (unCollapseMap[tilePos].size() > 1) {
-                unCollapseMap[tilePos].erase(unCollapseMap[tilePos].begin() + pos);
-            }
-            else
-                break;
-        }
-        pos = getRandom(0, unCollapseMap[tilePos].size());
-        selectedID = unCollapseMap[tilePos][pos];
-
-
-    } while (selectedID == -1);
-
-    if (selectedID == -1)
-        selectedID = 0;  
-    unCollapseMap[tilePos].clear();
-    unCollapseMap[tilePos].push_back(selectedID);
-}
-
-int selectLowestEntropyTile(std::vector<std::vector<int>> unCollapseMap) {
-    int lowestValue = unCollapseMap.size();
-    int lowestID = -1;
-
-    for (int i = 0; i < unCollapseMap.size(); i++) {
-        if (unCollapseMap[i].size() > 1) {
-            if (lowestValue > unCollapseMap[i].size()) {
-                lowestID = i;
-                lowestValue = unCollapseMap[i].size();
-            }
-        }
-    }
-    if (lowestID == -1) {
-        //std::cout << "selección aleatoria----------------------------------------------------" << std::endl;
-        lowestID = getRandom(0, unCollapseMap.size());
-    }
-    return lowestID;
-}
-void printCollapsedTile(std::vector<std::vector<int>> unCollapseMap, int size) {
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            if (unCollapseMap[j + i * size].size() == 1) {
-                std::cout << unCollapseMap[j + i * size].front() << "*" << "|| ";
-            }
-            else if (unCollapseMap[j + i * size].size() < size * size) {
-                std::cout << unCollapseMap[j + i * size].size() << " " << "|| ";
-            }
-            else
-                std::cout << "X" << " || ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "---------------" << std::endl;
-}
+//funcion para la lectura de la imagen de ejemplo
 bool readImagePPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles) {
     std::ifstream archivo(r, std::ios::binary);
     if (!archivo.is_open()) {
@@ -223,6 +123,7 @@ bool readImagePPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixe
 
     return true;
 }
+//funcion para la escritura de una nueva imagen
 bool writeImagePPM(const std::string& r, int w, int h, const std::vector<Pixel>& pixeles) {
     std::ofstream archivo(r, std::ios::binary);
     if (!archivo.is_open()) {
@@ -235,6 +136,548 @@ bool writeImagePPM(const std::string& r, int w, int h, const std::vector<Pixel>&
 
     return true;
 }
+//definir cuantas posibles estados puede tomar un pixel y cuantas veces aparece
+void defineTiles(const std::vector<Pixel>& pixelVector, std::vector<Pixel>& posibleTiles) {
+    posibleTiles.push_back(pixelVector.front());
+    for (const auto& pixel : pixelVector)
+        if (!Pixel::contienePixel(posibleTiles, pixel))
+            posibleTiles.push_back(pixel);
+}
+//funciona para imprimir el mapa que son valores int
+void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi) {
+    for (int i = -1; i < size; i++) {
+        if (i == -1) {
+            std::cout << BLUE << " X" << " " << RESET << "|| ";
+            for (int z = 0; z < size; z++) {
+                if (z < 10) {
+
+                    std::cout << BLUE << " " << z << " " << RESET << "|| ";
+                }
+                else {
+
+                    std::cout << BLUE << z << " " << RESET << "|| ";
+                }
+            }
+        }
+        else {
+            for (int j = -1; j < size; j++) {
+                if (j == -1) {
+                    if (i < 10) {
+
+                        std::cout << " " << BLUE << i << RESET << " || ";
+                    }
+                    else {
+
+                        std::cout << BLUE << i << RESET << " || ";
+                    }
+                }
+                else if (unCollapseMap[j + i * size].size() == 1) {
+                    if (unCollapseMap[j + i * size].front() < 10) {
+                        if (unCollapseMap[j + i * size].front() == 0)
+                            std::cout << GREEN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else if (unCollapseMap[j + i * size].front() == 1)
+                            std::cout << RED << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else if (unCollapseMap[j + i * size].front() == 2)
+                            std::cout << BLUE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else if (unCollapseMap[j + i * size].front() == 3)
+                            std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else if (unCollapseMap[j + i * size].front() == 4)
+                            std::cout << YELLOW << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                    }
+                    else {
+                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                    }
+                }
+                else if (unCollapseMap[j + i * size].size() == 0) {
+                    std::cout << "  " << " || ";
+                }
+                else if (unCollapseMap[j + i * size].size() == posibi) {
+                    std::cout << "  " << " || ";
+                }
+                else if (unCollapseMap[j + i * size].size() < posibi)
+                    std::cout << PURPLE << " " << unCollapseMap[j + i * size].size() << RESET << " || ";
+                else
+                    std::cout << "X ||";
+            }
+        }
+
+        std::cout << std::endl;
+    }
+    std::cout << "---------------" << std::endl;
+}
+//funcion para ver si dos patrones son iguales
+bool comparePattern(const Pattern& a, const Pattern& b) {
+    return a.weight > b.weight;
+}
+//funcion para separar la imagen en los diferentes patrones que la componen
+void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, int N) {
+    std::vector<Pixel> tmpVector;
+    std::vector<int> tmpCooVector;
+
+    //seperacion de la imagen en multiples patrones
+    //for (int y = 0; y <= inputImageHeight - N; y++)
+    for (int x = 0; x <= inputImageWidth * inputImageHeight - (inputImageWidth * (N - 1)) - N; x++) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[(x + j + i * inputImageWidth)]);
+                tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
+                tmpVector.push_back(pixelVector[(x + j + i * inputImageWidth)]);
+            }
+        }
+
+        Pattern newPattern(pattArray.size(), N);
+        newPattern.addPixelVector(tmpVector);
+        newPattern.addPixelCooVector(tmpCooVector);
+        pattArray.push_back(newPattern);
+
+
+        tmpVector.clear();
+        tmpCooVector.clear();
+    }
+
+    int weight = 0;
+    for (int i = 0; i < pattArray.size(); i++) {
+        if (pattArray[i].pattern) {
+            weight++;
+            for (int j = i + 1; j < pattArray.size(); j++) {
+                if (pattArray[j].pattern && pattArray[i].comparePixelPattern(pattArray[j].pixeles)) {
+                    pattArray[j].pattern = false;
+                    weight++;
+                }
+            }
+            pattArray[i].weight = weight;
+        }
+        weight = 0;
+    }
+
+    std::vector<Pattern> tmpPattArray;
+    for (int i = 0; i < pattArray.size(); i++)
+        if (pattArray[i].pattern) {
+            tmpPattArray.push_back(pattArray[i]);
+        }
+    pattArray.clear();
+    pattArray = tmpPattArray;
+    std::cout << "Patrones totales obtenidos de la imagen: " << pattArray.size() << std::endl;
+
+    std::sort(pattArray.begin(), pattArray.end(), comparePattern);
+    for (int i = 0; i < pattArray.size(); i++) {
+        pattArray[i].id = i;
+    }
+
+    std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
+}
+//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
+void initializePosMap(std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& posibleTiles, int Y) {
+    Y = Y * Y;
+    unCollapseMap.resize(Y);
+    for (int i = 0; i < Y; i++) {
+        for (int j = 0; j < posibleTiles.size(); j++) {
+            unCollapseMap[i].push_back(j);
+        }
+    }
+}
+//funcion para elegir la casilla con entropia (posibles colores) disponible en el mapa
+int selectLowestEntropyTile(const std::vector<std::vector<int>>& unCollapseMap, int size, int LastLowestEntropyTilePos, const std::vector<int>& regionesRecienColapsadas) {
+    int lowestValue = size, lowestID = -1;
+
+    if (regionesRecienColapsadas.size() > 0) {
+        lowestID = regionesRecienColapsadas[getRandom(0, regionesRecienColapsadas.size())];
+        lowestValue = unCollapseMap[lowestID].size();
+
+        for (int i = 0; i < regionesRecienColapsadas.size(); i++) {
+            if (lowestValue > unCollapseMap[regionesRecienColapsadas[i]].size()) {
+                lowestID = regionesRecienColapsadas[i];
+                lowestValue = unCollapseMap[regionesRecienColapsadas[i]].size();
+            }
+        }
+    }
+    else {
+
+        std::vector<int> uncompleted;
+        for (int i = 0; i < unCollapseMap.size(); i++) {
+            //si es que hay más de una posibilidad para la casilla
+            if (unCollapseMap[i].size() > 1)
+                uncompleted.push_back(i);
+        }
+        lowestID = uncompleted[lowestID = getRandom(0, uncompleted.size())];
+    }
+    return lowestID;
+}
+//funciones para confirmar si el patron coincide en cada uno de sus puntos con el espacio alrededor del punto entregado
+bool selectPatternAnalizer(Pattern& pattern, const std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos, int i_min, int i_max, int j_min, int j_max) {
+    bool contains = false;
+    std::vector<int> mapCoo;
+    int count = 0;
+    for (int i = i_min, x = 0; i <= i_max; i++, x++) {
+        for (int j = j_min, y = 0; j <= j_max; j++, y++) {
+            for (int z = 0; z < unCollapseMap[pos + j + i * N].size(); z++) {
+                if (pattern.pixelesCoo[y + x * N] == unCollapseMap[pos + j + i * Y][z]) {
+                    mapCoo.push_back(pos + j + i * Y);
+                    contains = true;
+                    break;
+                }
+            }
+            if (!contains) {
+                mapCoo.clear();
+                return false;
+            }
+            else {
+                contains = false;
+            }
+
+        }
+    }
+    pattern.coordinate = mapCoo;
+    return true;
+}
+bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos, bool forceCenter) {
+
+    bool U = false, S = false, E = false, W = false, C = false, contains = false;
+
+    //center, norte, sur, este , oeste
+    if (N % 2 == 1)
+        if (pos % Y >= (N / 2) && pos % Y < Y - (N / 2) && pos / Y >= (N / 2) && pos / Y < Y - (N / 2)) {
+            if (forceCenter) {
+                for (int i = 0; i < pattArray.size(); i++) {
+                    if (selectPatternAnalizer(pattArray[i], unCollapseMap, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
+                        pattern = pattArray[i];
+                        return true;
+                    }
+                }
+            }
+            else if (selectPatternAnalizer(pattern, unCollapseMap, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
+                return true;
+            }
+        }
+
+    if (pos / Y >= N - 1)
+        U = true;
+    if (pos / Y < Y - (N - 1))
+        S = true;
+    if (pos % Y >= N - 1)
+        W = true;
+    if (pos % Y < Y - (N - 1))
+        E = true;
+
+    if (U) {
+        for (int i = 0; i < N; i++) {
+            if (W) {
+                for (int j = 0; j < N; j++) {
+                    if (selectPatternAnalizer(pattern, unCollapseMap, N, Y, pos, -(N - 1), 0, -(N - 1), 0)) {
+                        return true;
+                    }
+                }
+            }
+            else if (E) {
+                for (int j = 0; j < N; j++) {
+                    if (selectPatternAnalizer(pattern, unCollapseMap, N, Y, pos, -(N - 1), 0, 0, N - 1)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    else if (S) {
+        for (int i = 0; i < N; i++) {
+            if (W) {
+                for (int j = 0; j < N; j++) {
+                    if (selectPatternAnalizer(pattern, unCollapseMap, N, Y, pos, 0, N - 1, -(N - 1), 0)) {
+                        return true;
+                    }
+                }
+            }
+            else if (E) {
+                for (int j = 0; j < N; j++) {
+                    if (selectPatternAnalizer(pattern, unCollapseMap, N, Y, pos, 0, N - 1, 0, N - 1)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+//funcion para colapsar una posicion a una patron en concreto que coincida por cada pixel con los valores adyacentes al punto
+bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, const int Y, std::vector<Pattern>& pattern, Pattern& selectedPatt, int pos) {
+    int N = pattern.front().N;
+    auto newPattern = pattern.front();
+    int stuck_Counter = 0;
+
+    std::vector<int> usedPatterns;
+    auto iterador = usedPatterns.end();
+
+    bool finded;
+
+    do {
+        do {
+            if (usedPatterns.size() == pattern.size()) {
+                std::cout << RED << "no hay más soluciones disponibles" << RESET << std::endl;
+                return false;
+            }
+            newPattern = pattern[getRandomPatternWeighted(pattern)];
+            iterador = std::find(usedPatterns.begin(), usedPatterns.end(), newPattern.id);
+        } while (iterador != usedPatterns.end());
+        usedPatterns.push_back(newPattern.id);
+        //std::cout << "patron seleccionado: " << newPattern.id << std::endl;
+
+        if (selectPattern(newPattern, pattern, unCollapseMap, N, Y, pos, true)) {
+            finded = true;
+        }
+        else if (selectPattern(newPattern, pattern, unCollapseMap, N, Y, pos, false)) {
+            finded = true;
+        }
+        else {
+            finded = false;
+        }
+
+    } while (!finded);
+    std::cout << "iteraciones realizadas buscando el patron: " << stuck_Counter << std::endl,
+        stuck_Counter = 0;
+
+    RPP.clear();
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (unCollapseMap[newPattern.coordinate[j + N * i]].size() > 1) {
+                unCollapseMap[newPattern.coordinate[j + N * i]].clear();
+                //convierte cada pixel del arreglo a su respectivo valor numerico que lo representa dentro de un collapseMap
+                unCollapseMap[newPattern.coordinate[j + N * i]].push_back(newPattern.pixelesCoo[j + N * i]);
+                RPP.push_back(newPattern.coordinate[j + N * i]);
+            }
+        }
+    }
+    selectedPatt = newPattern;
+    bool U = false, S = false, E = false, O = false;
+    int colide;
+
+    for (int i = 0; i < RPP.size(); i++) {
+        U = false, S = false, E = false, O = false, colide = 0;
+        if (RPP[i] / Y > 0) {
+            if (unCollapseMap[RPP[i] - Y].size() > 1) {
+
+                U = true;
+            }
+        }
+        if (RPP[i] / Y < Y - 1) {
+            if (unCollapseMap[RPP[i] + Y].size() > 1) {
+                S = true;
+            }
+        }
+        if (RPP[i] % Y > 1 && RPP[i] % Y < Y - 1) {
+            if (unCollapseMap[RPP[i] + 1].size() > 1) {
+                E = true;
+            }
+        }
+        if (RPP[i] % Y < Y - 1 && RPP[i] % Y > 0) {
+            if (unCollapseMap[RPP[i] - 1].size() > 1) {
+                O = true;
+            }
+        }
+
+        if (U || S || E || O) {
+
+        }
+        else {
+            RPP.erase(RPP.begin() + i);
+            i--;
+        }
+    }
+    std::cout << "regiones recien colapsadas totales: " << RPP.size() << " == ";
+    if (RPP.size() == 0) {
+        std::cout << "no se colapsaron nuevas regiones " << std::endl;
+    }
+    else {
+        for (int i = 0; i < RPP.size(); i++) {
+            std::cout << RPP[i] << " ";
+        }
+        std::cout << std::endl;
+    }
+    return true;
+}
+//funcion para obtener los posibles candidatos para donde empezar a propagar
+void getMapPropagationPos(std::vector<int>& posiblePos, const std::vector<std::vector<int>>& unCollapseMap, const std::vector<int>& regionesRecienColapsadas, const int N, const int Y) {
+    int distance = 1;
+    posiblePos.clear();
+    bool U = false, S = false, E = false, W = false, C = false, contains = false;
+
+    std::vector<int> borders;
+    //bordes en la zona de colapso
+    int begin = regionesRecienColapsadas.front(), end = regionesRecienColapsadas.back();
+    for (int i = 0, j = 1; i < regionesRecienColapsadas.size(); i++, j++) {
+        if ((j % N) == 1 || (j % N) == 0) {
+            borders.push_back(regionesRecienColapsadas[i]);
+        }
+        else if (regionesRecienColapsadas[i] <= begin + N) {
+            borders.push_back(regionesRecienColapsadas[i]);
+        }
+        else if (regionesRecienColapsadas[i] >= end - N) {
+            borders.push_back(regionesRecienColapsadas[i]);
+        }
+
+    }
+    /*
+    for (int i = 0; i < borders.size(); i++) {
+        U = false, S = false, W = false, E = false;
+        if (borders[i] / Y > 0)
+            if (unCollapseMap[borders[i] - Y].size() > 1) {
+                posiblePos.push_back(borders[i] - Y); U = true;
+            }
+        if (borders[i] / Y < Y - 1)
+            if (unCollapseMap[borders[i] + Y].size() > 1) {
+                posiblePos.push_back(borders[i] + Y); S = true;
+            }
+        if (borders[i] % Y < Y - 1)
+            if (unCollapseMap[borders[i] + 1].size() > 1) {
+                posiblePos.push_back(borders[i] + 1);E = true;
+            }
+        if (borders[i] % Y > 0)
+            if (unCollapseMap[borders[i] - 1].size() > 1) {
+                posiblePos.push_back(borders[i] - 1);W = true;
+            }
+
+        if (U) {
+            if (E) {
+                if(unCollapseMap[borders[i] - Y + 1].size() > 1)
+                    posiblePos.push_back(borders[i] - Y + 1);
+            }
+            if (W) {
+                if (unCollapseMap[borders[i] - Y - 1].size() > 1)
+                    posiblePos.push_back(borders[i] - Y - 1);
+            }
+        }
+        if (S) {
+            if (E) {
+                if (unCollapseMap[borders[i] + Y + 1].size() > 1)
+                    posiblePos.push_back(borders[i] + Y + 1);
+            }
+            if (W) {
+                if (unCollapseMap[borders[i] + Y - 1].size() > 1)
+                    posiblePos.push_back(borders[i] + Y - 1);
+            }
+        }
+
+        //std::cout << "el borde " << borders[i] << " tiene disponible N " << U << " S " << S << " E " << E << " W " << W << std::endl;
+    }
+    */
+    posiblePos = borders;
+    std::cout << "posiciones de propagacion posibles : ";
+    for (int i = 0; i < posiblePos.size(); i++) {
+        std::cout << posiblePos[i] << " ";
+    }
+    std::cout << std::endl;
+}
+//funcion para crear un mapa con los valores de los patrones candidatos para la propagacion
+void reduceMap(const std::vector<Pattern>& pattern, std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos) {
+    for (int i = 0; i < pattern.size(); i++) {
+        for (int z = 0; z < pattern[i].coordinate.size(); z++) {
+            unCollapseMap[pattern[i].coordinate[z]].push_back(pattern[i].pixelesCoo[z]);
+            if (unCollapseMap[pattern[i].coordinate[z]].size() > 1) {
+
+            }
+        }
+    }
+}
+//funcion para ver y guardar que patrones son compatibles alrededor de los posibles candidatos
+//requiere revision////requiere revision//////requiere revision///////requiere revision//////////////////requiere revision//////////////////
+void propagate(std::vector<std::vector<int>>& unCollapseMap, const std::vector<int>& regionesRecienColapsadas, std::vector<Pattern>& pattern, int pos, const int N, const int Y) {
+
+    //distancia de N + 1 para buscar posibles candidatos
+    std::vector<int> posiblePos;
+    getMapPropagationPos(posiblePos, unCollapseMap, regionesRecienColapsadas, N, Y);
+    std::vector<Pattern> propagationPattern;
+    std::vector<std::vector<int>> tmpUnCollapseMap;
+    tmpUnCollapseMap.resize(Y * Y);
+    auto newPattern = pattern.front();
+    for (int i = 0; i < posiblePos.size(); i++) {
+        propagationPattern.clear();
+        std::cout << "posicion posible de propagacion " << posiblePos[i] << " /";
+        for (int j = 0; j < pattern.size(); j++) {
+            if (selectPattern(pattern[j], pattern, unCollapseMap, N, Y, posiblePos[i], false)) {
+                propagationPattern.push_back(pattern[j]);
+            }
+        }
+        std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
+        if (propagationPattern.size() > 0) {
+            reduceMap(propagationPattern, tmpUnCollapseMap, N, Y, posiblePos[i]);
+        }
+    }
+    for (auto& e : tmpUnCollapseMap) {
+        std::sort(e.begin(), e.end());
+        auto it = std::unique(e.begin(), e.end());
+        e.erase(it, e.end());
+    }
+    //std::cout << "final reduced Map" << std::endl;
+    //printMap(tmpUnCollapseMap, Y, 5);
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //! la propagacion puede colapsar??????
+    //! !!!!!!!!!!!!!!!!!
+    //! 
+    for (int i = 0; i < unCollapseMap.size(); i++) {
+        if (tmpUnCollapseMap[i].size() != 0 && unCollapseMap[i].size() > 1) {
+            if (tmpUnCollapseMap[i].size() > 1)
+                unCollapseMap[i] = tmpUnCollapseMap[i];
+        }
+    }
+}
+//funcion para reconstruir una imagen a partir del mapa generado
+void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& tiles) {
+    for (int i = 0; i < unCollapseMap.size(); i++) {
+        pixelVectorSalida.push_back(tiles[unCollapseMap[i].front()]);
+    }
+}
+//verifica si todas las posiciones del mapa estan colapsadas
+bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
+    for (int i = 0; i < unCollapseMap.size(); i++) {
+        if (unCollapseMap[i].size() != 1) {
+            return false;
+        }
+    }
+    return true;
+}
+//creación de una imagen con un mosaico de los patrones
+void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y) {
+    int lenght = pattern.front().N;
+    int wAmount = lenght * 10 + 10;
+
+    Pixel pixelNegro = { 0,0,0 };
+
+    int Width = 0;
+
+    do {
+        Width++;
+    } while (Width * Width < pattern.size());
+
+    int z = 0;
+    Y = lenght * Width + Width;
+    do {
+        for (int x = 0; x < lenght; x++) {
+            for (int j = 0; j < Width; j++) {
+                for (int i = 0; i < lenght; i++) {
+                    if ((z * Width + j) < pattern.size()) {
+                        pixelVector.push_back(pattern[z * Width + j].pixeles[x * lenght + i]);
+                    }
+                    else {
+                        pixelVector.push_back(pixelNegro);
+                    }
+                }
+                pixelVector.push_back(pixelNegro);
+            }
+        }
+        for (int i = 0; i < lenght * Width + Width; i++) {
+            pixelVector.push_back(pixelNegro);
+        }
+        z++;
+    } while (Width > z);
+
+
+}
+
+void revertToStep(std::vector<Backtracking>& backtrackArray, std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& regionesRecienColapsadas, Pattern& pattern, int& step, int toStep) {
+    unCollapseMap = backtrackArray[toStep].cMap;
+    regionesRecienColapsadas = backtrackArray[toStep].RRC;
+    pattern = backtrackArray[toStep].selectedPatt;
+    step = toStep;
+}
 
 int main(int argc, char* argv[]) {
     //1 image.ppm
@@ -243,143 +686,127 @@ int main(int argc, char* argv[]) {
     std::string filename = "./" + imageName, PPM_Identifier;
     std::ifstream file(filename, std::ios::binary);
     int inputImageWidth, inputImageHeight;
-    int tileSize = std::atoi(argv[2]);
-    std::vector<Pixel> pixelVector;
+    int N = std::atoi(argv[2]);
+    int Y = std::atoi(argv[3]);
+    std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida;
+    //lectura de la imagen de entrada
     if (readImagePPM(imageName, inputImageWidth, inputImageHeight, pixelVector)) {
         std::cout << "Imagen PPM leída exitosamente." << std::endl;
     }
-
+    //inicio de cronometro
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    //division y guardado del vector original en vectores que actuaran como casillas
-    std::vector<Pixel> tmpVector;
-    std::vector<Tile> tilesArray;
-    for (int y = 0; y < inputImageHeight / tileSize; y++) {
-        for (int x = 0, b = 0; x < inputImageWidth / tileSize; x++, b++) {
-            if (b > inputImageWidth / tileSize) {
-                b = 0;
-            }
-            for (int i = 0; i < tileSize; i++) {
-                for (int j = 0; j < tileSize; j++) {
-                    tmpVector.push_back(pixelVector[j + (inputImageWidth * i) + (b * tileSize) + (y * inputImageHeight * tileSize)]);
-                }
-            }
-            //guardado de una nueva casilla
-            Tile newTile(tilesArray.size(), tileSize);
-            newTile.addPixelVector(tmpVector);
-            tilesArray.push_back(newTile);
-            tmpVector.clear();
-        }
-    }
+    //defincion de las casillas
+    std::vector<Pixel> PosibleTiles;
+    defineTiles(pixelVector, PosibleTiles);
 
-    //definición de vecinos dentro de una matriz, -1 indica "sin vecino"
-    int max = sqrt(tilesArray.size());
-    for (int i = 0; i < max; i++) {
-        for (int j = 0; j < max; j++) {
+    //defincion de los patrones posibles que puede adoptar el mapa
+    std::vector<Pattern> patternArray;
+    definePatterns(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
 
-            //Izquierda
-            if (j > 0) {
-                tilesArray[j + i * max].id_W.push_back(tilesArray[(j - 1) + i * max].id);
-            }
-            else tilesArray[j + i * max].id_W.push_back(-1);
 
-            //Derecha
-            if (j < max - 1) {
-                tilesArray[j + i * max].id_E.push_back(tilesArray[(j + 1) + i * max].id);
-            }
-            else tilesArray[j + i * max].id_E.push_back(-1);
-            //Arriba
-            if (i > 0) {
-                tilesArray[j + i * max].id_N.push_back(tilesArray[j + (i - 1) * max].id);
-            }
-            else tilesArray[j + i * max].id_N.push_back(-1);
-            //Abajo
-            if (i < max - 1) {
-                tilesArray[j + i * max].id_S.push_back(tilesArray[j + (i + 1) * max].id);
-            }
-            else tilesArray[j + i * max].id_S.push_back(-1);
-        }
-    }
-
-    int patternN = 0;
-    for (int i = 0; i < tilesArray.size(); i++) {
-        if (tilesArray[i].pattern) {
-            patternN++;
-            for (int j = i + 1; j < tilesArray.size(); j++) {
-                if (tilesArray[j].pattern && tilesArray[i].comparePattern2(tilesArray[j].pixeles)) {
-                    
-                    auto iterador = std::find(tilesArray[i].id_E.begin(), tilesArray[i].id_E.end(), tilesArray[j].id_E.front());
-                    if (iterador == tilesArray[i].id_E.end())
-                        tilesArray[i].id_E.push_back(tilesArray[j].id_E.front());
-                    
-                    iterador = std::find(tilesArray[i].id_W.begin(), tilesArray[i].id_W.end(), tilesArray[j].id_W.front());
-                    if (iterador == tilesArray[i].id_W.end())
-                        tilesArray[i].id_W.push_back(tilesArray[j].id_W.front());
-                    
-                    iterador = std::find(tilesArray[i].id_S.begin(), tilesArray[i].id_S.end(), tilesArray[j].id_S.front());
-                    if (iterador == tilesArray[i].id_S.end())
-                        tilesArray[i].id_S.push_back(tilesArray[j].id_S.front());
-                    
-                    iterador = std::find(tilesArray[i].id_N.begin(), tilesArray[i].id_N.end(), tilesArray[j].id_N.front());
-                    if (iterador == tilesArray[i].id_N.end())
-                        tilesArray[i].id_N.push_back(tilesArray[j].id_N.front());
-
-                    tilesArray[j].pattern = false;
-                    tilesArray[j].idPattern = tilesArray[i].id;
-                }
-            }
-        }
-    }
-    std::cout << "numero de patrones " << patternN << " de "<< tilesArray.size() << std::endl;
+    //mapa de superposiciones posibles
     std::vector<std::vector<int>> unCollapseMap;
-    unCollapseMap.resize(tilesArray.size());
+    std::vector<int> RPP;
+    RPP.resize(0);
 
-    for (int i = 0; i < tilesArray.size(); i++) {
-        for (int j = 0; j < tilesArray.size(); j++) {
-            unCollapseMap[i].push_back(j);
-        }
-    }
-    int lowestEntropyTile;
+    initializePosMap(unCollapseMap, PosibleTiles, Y);
+    int lowestEntropyTilePos;
+    //inicio del algoritmo WFC
+    bool TestingFixedStart = true;
+    bool randomStart = false;
+
+    //almacen de información para backtracking
+    std::vector<Backtracking> backtracking;
+    int step = 0, toStep = 0;
+    Pattern lastSelectedPattern(0, 0);
+
+
     while (!mapCompleted(unCollapseMap)) {
 
-        //seleccionar, buscar la casilla con la menor entropia posible
-        lowestEntropyTile = selectLowestEntropyTile(unCollapseMap);
-        std::cout << "seleccionar : " << lowestEntropyTile  << std::endl;
+        //seleccionar una casilla para colpasar
+        std::cout << GREEN << "SELECCIONAR " << RESET << std::endl;
+        if (TestingFixedStart) {
+            lowestEntropyTilePos = 9;
+            TestingFixedStart = false;
+        }
+        if (randomStart) {
+            lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
+            randomStart = false;
+            std::cout << YELLOW << "Posicion aleatoria: " << lowestEntropyTilePos << RESET << std::endl;
+        }
+        else {
+            lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
+            std::cout << YELLOW << "Posicion con la entropia más baja: " << lowestEntropyTilePos << RESET << std::endl;
+        }
 
-        //colapsar
-        std::cout << "Colapsar" << std::endl;
-        collapseTile(unCollapseMap, tilesArray, lowestEntropyTile);
-        printCollapsedTile(unCollapseMap, inputImageWidth / tileSize);
+        std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
+        if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
+            printMap(unCollapseMap, Y, PosibleTiles.size());
 
-        //propagar
-        std::cout << "propagar" << std::endl;
-        propagateTile(unCollapseMap, tilesArray, lowestEntropyTile);
-        printCollapsedTile(unCollapseMap, inputImageWidth / tileSize);
+            std::cout << " " << std::endl;
+            std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
+            propagate(unCollapseMap, RPP, patternArray, lowestEntropyTilePos, N, Y);
+            printMap(unCollapseMap, Y, PosibleTiles.size());
+
+            Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, RPP);
+            backtracking.push_back(newBacktrack);
+            step++;
+
+            //backtracking
+            /*toStep = step - 1;
+            revertToStep(backtracking, unCollapseMap, regionesRecienColapsadas, lastSelectedPattern, step, toStep);
+
+            while (backtracking.size() > toStep) {
+                backtracking.pop_back();
+            }*/
+            
+        }
+        std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-    std::cout << "mapa completado" << std::endl;
+        /*
+        //seleccionar patron compatible y collapsar
+        std::cout << BLUE << "COLAPSAR" << RESET << std::endl;
+        if (!Collapse(unCollapseMap, regionesRecienColapsadas, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
+            //backtracking
+            toStep = step - 1;
+            revertToStep(backtracking, unCollapseMap, regionesRecienColapsadas, lastSelectedPattern, step, toStep);
 
-    std::vector<Tile> newTilesArray;
-    for (int i = 0, pos = 0; i < tilesArray.size(); i++) {
-        pos = unCollapseMap[i].front();
-        newTilesArray.push_back(tilesArray[pos]);
-    }
-
-    //reconstrucción de la imagen en el vector de salida
-    std::vector<Pixel> pixelVectorSalida;
-    for (int y = 0; y < inputImageHeight / tileSize; y++) {
-        for (int x = 0; x < tileSize; x++) {
-            for (int i = 0; i < inputImageWidth / tileSize; i++) {
-                for (int j = 0; j < tileSize; j++) {//i+y j+x
-                    pixelVectorSalida.push_back(newTilesArray[i + (y * (inputImageHeight/tileSize))].pixeles[j + (x * tileSize)]);
-                }
+            while (backtracking.size() > toStep) {
+                backtracking.pop_back();
             }
         }
-    }
+        else {
+            printMap(unCollapseMap, Y, PosibleTiles.size());
+            std::cout << " " << std::endl;
+            std::cout << BLUE << "PROPAGAR" << RESET << std::endl;
+            propagate(unCollapseMap, regionesRecienColapsadas, patternArray, lowestEntropyTilePos, N, Y);
+            printMap(unCollapseMap, Y, PosibleTiles.size());
 
-    if (writeImagePPM("imagen_Generada.ppm", inputImageWidth, inputImageHeight, pixelVectorSalida)) {
+            Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, regionesRecienColapsadas);
+            backtracking.push_back(newBacktrack);
+            step++;
+        }
+
+    }
+    */
+
+    std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
+    //construccion de una nueva imagen
+    reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
+
+    //guardado de la imagen en un nuevo archivo
+    if (writeImagePPM("imagen_Generada.ppm", Y, Y, pixelVectorSalida)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }
-    
+    //dibujar los patrones en una imagen aparte
+    createPatternDraw(patternArray, patterVectorSalida, Y);
+    if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
+        std::cout << "Imagen PPM escrita exitosamente." << std::endl;
+    }
+    //fin del cronometro del tiempo de ejecucion
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     std::cout << "Tiempo de ejecución: " << duration << " ms" << std::endl;
