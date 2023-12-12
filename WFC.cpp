@@ -781,18 +781,18 @@ int main(int argc, char* argv[]) {
                 lastStep = step;
             }
             step++;
-
         }
         if(RPP.size() == 0) {
             std::cout << YELLOW << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
-            std::exit(0);
+            //std::exit(0);
+            backtrackingRequested = true;
             backtrackUses++;
             std::cout << "usos del backtracking: " << backtrackUses << std::endl;
             std::cout << "toStep: " << toStep << std::endl;
 
-            if (backtracking[lastStep]->RRC.size() == 0) {
+            if (lastStep > 0)
                 lastStep--;
-            }
+
             toStep = lastStep;
             std::cout << "lastStep: " << lastStep << std::endl;
 
@@ -809,7 +809,7 @@ int main(int argc, char* argv[]) {
 
             backtracking.erase(std::remove(backtracking.begin(), backtracking.end(), nullptr), backtracking.end());
             std::cout << "backtracking size : " << backtracking.size() << std::endl;
-            //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         else {
             std::cout << YELLOW << "reintentar con otro punto" << RESET << std::endl;
@@ -819,7 +819,7 @@ int main(int argc, char* argv[]) {
         std::cout << PURPLE << "punto de iteracion" << RESET << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
     /*
     //seleccionar patron compatible y collapsar
