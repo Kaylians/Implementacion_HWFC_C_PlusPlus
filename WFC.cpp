@@ -415,7 +415,8 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
                 std::cout << RED << "no hay más soluciones disponibles" << RESET << std::endl;
                 return false;
             }
-            newPattern = pattern[getRandomPatternWeighted(pattern)];
+            //newPattern = pattern[getRandomPatternWeighted(pattern)];
+            newPattern = pattern[getRandom(0, pattern.size())];
             iterador = std::find(usedPatterns.begin(), usedPatterns.end(), newPattern.id);
         } while (iterador != usedPatterns.end());
         usedPatterns.push_back(newPattern.id);
@@ -714,8 +715,7 @@ int main(int argc, char* argv[]) {
     initializePosMap(unCollapseMap, PosibleTiles, Y);
     int lowestEntropyTilePos;
     //inicio del algoritmo WFC
-    bool TestingFixedStart = true;
-    bool randomStart = false;
+    bool randomStart = true;
 
     //almacen de información para backtracking
     std::vector<Backtracking*> backtracking;
@@ -725,13 +725,10 @@ int main(int argc, char* argv[]) {
 
 
     while (!mapCompleted(unCollapseMap)) {
-        std::cout << PURPLE << "step: "<< step << RESET << std::endl;
+        std::cout << PURPLE << "step: " << step << RESET << std::endl;
         //seleccionar una casilla para colpasar
         std::cout << GREEN << "SELECCIONAR " << RESET << std::endl;
-        if (TestingFixedStart) {
-            lowestEntropyTilePos = 9;
-            TestingFixedStart = false;
-        }
+
         if (randomStart) {
             lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
             randomStart = false;
@@ -766,8 +763,9 @@ int main(int argc, char* argv[]) {
             std::cout << "usos del backtracking: " << backtrackUses << std::endl;
             std::cout << "toStep: " << toStep << std::endl;
             
+
             toStep = lastStep;
-            if(lastStep > 0)
+            if (lastStep > 0)
                 lastStep--;
             std::cout << "lastStep: " << lastStep << std::endl;
             /*
@@ -790,47 +788,47 @@ int main(int argc, char* argv[]) {
 
             for (auto it = backtracking.begin(); it != backtracking.end(); ++it) {
                 if ((*it)->step > toStep) {
-                    delete* it;  
+                    delete* it;
                     *it = nullptr;
                 }
             }
 
             backtracking.erase(std::remove(backtracking.begin(), backtracking.end(), nullptr), backtracking.end());
-
+            std::cout << "backtracking size : " << backtracking.size() << std::endl;
             //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         }
         std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
-        std::cout << PURPLE << "punto de iteracion" << RESET<<std::endl;
+        std::cout << PURPLE << "punto de iteracion" << RESET << std::endl;
         std::cout << std::endl;
-        std::cout << std::endl; 
+        std::cout << std::endl;
         //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-        /*
-        //seleccionar patron compatible y collapsar
-        std::cout << BLUE << "COLAPSAR" << RESET << std::endl;
-        if (!Collapse(unCollapseMap, regionesRecienColapsadas, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
-            //backtracking
-            toStep = step - 1;
-            revertToStep(backtracking, unCollapseMap, regionesRecienColapsadas, lastSelectedPattern, step, toStep);
+    /*
+    //seleccionar patron compatible y collapsar
+    std::cout << BLUE << "COLAPSAR" << RESET << std::endl;
+    if (!Collapse(unCollapseMap, regionesRecienColapsadas, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
+        //backtracking
+        toStep = step - 1;
+        revertToStep(backtracking, unCollapseMap, regionesRecienColapsadas, lastSelectedPattern, step, toStep);
 
-            while (backtracking.size() > toStep) {
-                backtracking.pop_back();
-            }
+        while (backtracking.size() > toStep) {
+            backtracking.pop_back();
         }
-        else {
-            printMap(unCollapseMap, Y, PosibleTiles.size());
-            std::cout << " " << std::endl;
-            std::cout << BLUE << "PROPAGAR" << RESET << std::endl;
-            propagate(unCollapseMap, regionesRecienColapsadas, patternArray, lowestEntropyTilePos, N, Y);
-            printMap(unCollapseMap, Y, PosibleTiles.size());
-
-            Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, regionesRecienColapsadas);
-            backtracking.push_back(newBacktrack);
-            step++;
-        }
-
     }
-    */
+    else {
+        printMap(unCollapseMap, Y, PosibleTiles.size());
+        std::cout << " " << std::endl;
+        std::cout << BLUE << "PROPAGAR" << RESET << std::endl;
+        propagate(unCollapseMap, regionesRecienColapsadas, patternArray, lowestEntropyTilePos, N, Y);
+        printMap(unCollapseMap, Y, PosibleTiles.size());
+
+        Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, regionesRecienColapsadas);
+        backtracking.push_back(newBacktrack);
+        step++;
+    }
+
+}
+*/
 
     std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
     std::cout << "usos del backtracking: " << backtrackUses << std::endl;
