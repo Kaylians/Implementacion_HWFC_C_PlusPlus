@@ -764,9 +764,12 @@ int main(int argc, char* argv[]) {
             backtrackingRequested = true;
             backtrackUses++;
             std::cout << "usos del backtracking: " << backtrackUses << std::endl;
+            std::cout << "toStep: " << toStep << std::endl;
+            
             toStep = lastStep;
-            lastStep--;
-
+            if(lastStep > 0)
+                lastStep--;
+            std::cout << "lastStep: " << lastStep << std::endl;
             /*
             std::cout << "tamano original : " << backtracking.size() << std::endl;
             for (const auto& objeto : backtracking) {
@@ -794,7 +797,7 @@ int main(int argc, char* argv[]) {
 
             backtracking.erase(std::remove(backtracking.begin(), backtracking.end(), nullptr), backtracking.end());
 
-
+            //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         }
         std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
         std::cout << PURPLE << "punto de iteracion" << RESET<<std::endl;
