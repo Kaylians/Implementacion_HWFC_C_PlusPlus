@@ -311,7 +311,13 @@ bool selectPatternAnalizer(Pattern& pattern, const std::vector<std::vector<int>>
     int count = 0;
     for (int i = i_min, x = 0; i <= i_max; i++, x++) {
         for (int j = j_min, y = 0; j <= j_max; j++, y++) {
-            for (int z = 0; z < unCollapseMap[pos + j + i * N].size(); z++) {
+            for (int z = 0; z < unCollapseMap[pos + j + i * Y].size(); z++) {
+                if (unCollapseMap[pos + j + i * Y].size() == 1) {
+                    count++;
+                    if (count == N * N) {
+                        return false;
+                    }
+                }
                 if (pattern.pixelesCoo[y + x * N] == unCollapseMap[pos + j + i * Y][z]) {
                     mapCoo.push_back(pos + j + i * Y);
                     contains = true;
@@ -399,7 +405,7 @@ bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std:
     return false;
 }
 //funcion para colapsar una posicion a una patron en concreto que coincida por cada pixel con los valores adyacentes al punto
-bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, const int Y, std::vector<Pattern>& pattern, Pattern& selectedPatt, int pos) {
+bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, const int Y, std::vector<Pattern>& pattern, Pattern& selectedPatt, int pos, int posibleTilesN) {
     int N = pattern.front().N;
     auto newPattern = pattern.front();
     int stuck_Counter = 0;
@@ -412,7 +418,14 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     do {
         do {
             if (usedPatterns.size() == pattern.size()) {
-                std::cout << RED << "no hay más soluciones disponibles" << RESET << std::endl;
+                std::cout << RED << "!!!!!!!!!!!!!!!!!!!!!!!!! NO HAY SOLUCIONES DISPONIBLES PARA LA POSICION: " << pos << RESET << std::endl;
+                auto i = std::find(RPP.begin(), RPP.end(), pos);
+                RPP.erase(i);
+                std::cout << "posiciones restantes: ";
+                for (int i = 0; i < RPP.size(); i++) {
+                    std::cout << RPP[i] << " ";
+                }
+                std::cout << std::endl;
                 return false;
             }
             //newPattern = pattern[getRandomPatternWeighted(pattern)];
@@ -422,10 +435,8 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
         usedPatterns.push_back(newPattern.id);
         //std::cout << "patron seleccionado: " << newPattern.id << std::endl;
 
-        if (selectPattern(newPattern, pattern, unCollapseMap, N, Y, pos, true)) {
-            finded = true;
-        }
-        else if (selectPattern(newPattern, pattern, unCollapseMap, N, Y, pos, false)) {
+        if (selectPattern(newPattern, pattern, unCollapseMap, N, Y, pos, false)) {
+            std::cout << "patron util encontrado: " << newPattern.id << std::endl;
             finded = true;
         }
         else {
@@ -436,7 +447,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     std::cout << "iteraciones realizadas buscando el patron: " << stuck_Counter << std::endl,
         stuck_Counter = 0;
 
-    RPP.clear();
+    //RPP.clear();
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             if (unCollapseMap[newPattern.coordinate[j + N * i]].size() > 1) {
@@ -450,42 +461,57 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     selectedPatt = newPattern;
     bool U = false, S = false, E = false, O = false;
     int colide;
-
+    std::vector<int> tmpRPP;
     for (int i = 0; i < RPP.size(); i++) {
-        U = false, S = false, E = false, O = false, colide = 0;
-        if (RPP[i] / Y > 0) {
-            if (unCollapseMap[RPP[i] - Y].size() > 1) {
+        std::cout << RPP[i];
+        if (unCollapseMap[RPP[i]].size() < posibleTilesN) {
+            U = false, S = false, E = false, O = false, colide = 0;
+            if (RPP[i] / Y > 0) {
+                if (unCollapseMap[RPP[i] - Y].size() > 1) {
+                    tmpRPP.push_back(RPP[i] - Y);
+                    U = true;
+                }
+            }
+            if (RPP[i] / Y < Y - 1) {
+                if (unCollapseMap[RPP[i] + Y].size() > 1) {
+                    tmpRPP.push_back(RPP[i] + Y);
+                    S = true;
+                }
+            }
+            if (RPP[i] % Y > 1 && RPP[i] % Y < Y - 1) {
+                if (unCollapseMap[RPP[i] + 1].size() > 1) {
+                    tmpRPP.push_back(RPP[i] + 1);
+                    E = true;
+                }
+            }
+            if (RPP[i] % Y < Y - 1 && RPP[i] % Y > 0) {
+                if (unCollapseMap[RPP[i] - 1].size() > 1) {
+                    tmpRPP.push_back(RPP[i] - 1);
+                    O = true;
+                }
+            }
 
-                U = true;
+            if (!U && !S && !E && !O) {
+                RPP.erase(RPP.begin() + i);
+                i--;
+                std::cout <<RED << "X" <<RESET;
             }
         }
-        if (RPP[i] / Y < Y - 1) {
-            if (unCollapseMap[RPP[i] + Y].size() > 1) {
-                S = true;
-            }
-        }
-        if (RPP[i] % Y > 1 && RPP[i] % Y < Y - 1) {
-            if (unCollapseMap[RPP[i] + 1].size() > 1) {
-                E = true;
-            }
-        }
-        if (RPP[i] % Y < Y - 1 && RPP[i] % Y > 0) {
-            if (unCollapseMap[RPP[i] - 1].size() > 1) {
-                O = true;
-            }
-        }
-
-        if (U || S || E || O) {
-
-        }
-        else {
-            RPP.erase(RPP.begin() + i);
-            i--;
-        }
+        std::cout << " ";
     }
-    std::cout << "regiones recien colapsadas totales: " << RPP.size() << " == ";
+    std::cout << std::endl;
+    for (int i = 0; i < tmpRPP.size(); i++) {
+        RPP.push_back(tmpRPP[i]);
+    }
+    tmpRPP.clear();
+
+    std::sort(RPP.begin(), RPP.end());
+    RPP.erase(std::unique(RPP.begin(), RPP.end()), RPP.end());
+
+    std::cout << "regiones para propagar: " << RPP.size() << " == ";
     if (RPP.size() == 0) {
         std::cout << "no se colapsaron nuevas regiones " << std::endl;
+        return false;
     }
     else {
         for (int i = 0; i < RPP.size(); i++) {
@@ -579,25 +605,26 @@ void reduceMap(const std::vector<Pattern>& pattern, std::vector<std::vector<int>
     }
 }
 //funcion para ver y guardar que patrones son compatibles alrededor de los posibles candidatos
-//requiere revision////requiere revision//////requiere revision///////requiere revision//////////////////requiere revision//////////////////
-void propagate(std::vector<std::vector<int>>& unCollapseMap, const std::vector<int>& regionesRecienColapsadas, std::vector<Pattern>& pattern, int pos, const int N, const int Y) {
+void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, std::vector<Pattern>& pattern, int pos, const int N, const int Y) {
 
     //distancia de N + 1 para buscar posibles candidatos
     std::vector<int> posiblePos;
-    getMapPropagationPos(posiblePos, unCollapseMap, regionesRecienColapsadas, N, Y);
+    //getMapPropagationPos(posiblePos, unCollapseMap, RPP, N, Y);
     std::vector<Pattern> propagationPattern;
     std::vector<std::vector<int>> tmpUnCollapseMap;
     tmpUnCollapseMap.resize(Y * Y);
     auto newPattern = pattern.front();
     for (int i = 0; i < posiblePos.size(); i++) {
         propagationPattern.clear();
-        std::cout << "posicion posible de propagacion " << posiblePos[i] << " /";
+        std::cout << "RPP: " << posiblePos[i] << " /";
         for (int j = 0; j < pattern.size(); j++) {
             if (selectPattern(pattern[j], pattern, unCollapseMap, N, Y, posiblePos[i], false)) {
                 propagationPattern.push_back(pattern[j]);
             }
         }
         std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
+        if (propagationPattern.size() == 0)
+            RPP.erase(RPP.begin() + i);
         if (propagationPattern.size() > 0) {
             reduceMap(propagationPattern, tmpUnCollapseMap, N, Y, posiblePos[i]);
         }
@@ -740,7 +767,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
-        if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
+        if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size())) {
             printMap(unCollapseMap, Y, PosibleTiles.size());
 
             std::cout << " " << std::endl;
@@ -756,32 +783,19 @@ int main(int argc, char* argv[]) {
             step++;
 
         }
-        else {
-            std::cout << GREEN << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
-            backtrackingRequested = true;
+        if(RPP.size() == 0) {
+            std::cout << YELLOW << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
+            std::exit(0);
             backtrackUses++;
             std::cout << "usos del backtracking: " << backtrackUses << std::endl;
             std::cout << "toStep: " << toStep << std::endl;
-            
 
-            toStep = lastStep;
-            if (lastStep > 0)
+            if (backtracking[lastStep]->RRC.size() == 0) {
                 lastStep--;
+            }
+            toStep = lastStep;
             std::cout << "lastStep: " << lastStep << std::endl;
-            /*
-            std::cout << "tamano original : " << backtracking.size() << std::endl;
-            for (const auto& objeto : backtracking) {
-                std::cout << "Object with step: " << objeto->step << std::endl;
-            }
-            std::cout << "control point 4" << std::endl;
-            std::cout << "tamano nuevo: " << backtracking.size() << std::endl;
 
-
-            std::cout << "After erase-remove:" << std::endl;
-            for (const auto& objeto : backtracking) {
-                std::cout << "Object with step: " << objeto->step << std::endl;
-            }
-            */
             revertToStep(backtracking, unCollapseMap, RPP, lastSelectedPattern, step, toStep);
             backtracking.erase(std::remove_if(backtracking.begin(), backtracking.end(), [toStep](Backtracking* Obj) {
                 return Obj->step > toStep; }), backtracking.end());
@@ -797,11 +811,15 @@ int main(int argc, char* argv[]) {
             std::cout << "backtracking size : " << backtracking.size() << std::endl;
             //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         }
+        else {
+            std::cout << YELLOW << "reintentar con otro punto" << RESET << std::endl;
+
+        }
         std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
         std::cout << PURPLE << "punto de iteracion" << RESET << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
     /*
     //seleccionar patron compatible y collapsar
