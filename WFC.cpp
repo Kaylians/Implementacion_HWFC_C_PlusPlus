@@ -1,4 +1,29 @@
 // cd /mnt/d/Memoria\ HWFC/Code/test2/src
+
+// g++ -g -Wall -Wextra -o WFC WFC.cpp
+
+// valgrind ./WFC
+// valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./WFC
+// valgrind --tool=cachegrind ./WFC
+
+//problemas encontrados:
+/*
+* //despues de terminar la ejecucion
+* double free or corruption (out)
+* free(): invalid size
+* munmap_chunk(): invalid pointer
+* Segmentation fault (core dumped)
+* munmap_chunk(): invalid pointer
+* 
+* //durante la ejecucion
+* corrupted size vs. prev_size Aborted (core dumped)  reducir mapa(ultimo print)  
+* free(): invalid next size (fast)  (despues de terminar la iteración, no se llego a un print nuevo) (M)
+* munmap_chunk(): invalid pointer (misma situacion a la anterior) (no se tenia ningun RPP) (M)
+* malloc(): invalid next size (unsorted) (fallo durante la propagacion)
+* double free or corruption (!prev) (fallo durante la propagacion) (ultimo print reducir mapa)
+* malloc(): invalid next size (unsorted) (durante  el guardado de backtracking)
+*/
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -110,6 +135,9 @@ public:
     std::vector<int> RPP;
     Backtracking(int step, int selectedPos, std::vector<std::vector<int>> cMap, std::vector<int> RPP) :
         step(step), selectedPos(selectedPos), cMap(cMap), RPP(RPP) {}
+    ~Backtracking() {
+
+    }
 };
 //funcion para inicializar la generación de numeros aleatorios
 void initializeRandomSeed() {
@@ -505,7 +533,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
         else {
             finded = false;
         }
-
+        stuck_Counter++;
     } while (!finded);
     std::cout << "iteraciones realizadas buscando el patron: " << stuck_Counter << std::endl,
         stuck_Counter = 0;
@@ -604,16 +632,16 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
     std::vector<std::vector<int>> tmpUnCollapseMap;
     tmpUnCollapseMap.resize(Y * Y);
     auto newPattern = pattern.front();
-
+    std::cout << "analizar patrones de RPP para propagacion" << std::endl;
     for (int i = 0; i < posiblePos.size(); i++) {
         propagationPattern.clear();
-        std::cout << "RPP: " << posiblePos[i] << " /";
+        //std::cout << "RPP: " << posiblePos[i] << " /";
         for (int j = 0; j < pattern.size(); j++) {
             if (selectPattern(pattern[j], pattern, unCollapseMap, N, Y, posiblePos[i], false)) {
                 propagationPattern.push_back(pattern[j]);
             }
         }
-        std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
+        //std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
         if (propagationPattern.size() == 0) {
             std::cout << "eliminar posicion sin patrones:" << posiblePos[i] <<std::endl;
             auto it = std::find(RPP.begin(),RPP.end(), posiblePos[i]);
@@ -622,7 +650,7 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
                 RPP.erase(RPP.begin() + i);
             }
         }else {
-            std::cout << "reducir mapa" << std::endl;
+            //std::cout << "reducir mapa" << std::endl;
             reduceMap(propagationPattern, tmpUnCollapseMap, N, Y, posiblePos[i]);
         }
     }
@@ -698,10 +726,30 @@ void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& 
 
 }
 
-void revertToStep(std::vector<Backtracking*>& backtrackArray, std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, int selectedPos, int& step, int toStep) {
+void revertToStep(std::vector<Backtracking*>& backtrackArray, std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, int& step, int toStep) {
     unCollapseMap = backtrackArray[toStep]->cMap;
     RPP = backtrackArray[toStep]->RPP;
     step = toStep;
+
+    /*
+    auto it = std::find(backtrackArray[toStep]->RPP.begin(), backtrackArray[toStep]->RPP.end(), backtrackArray[toStep]->selectedPos);
+    if (it != RPP.end()) {
+        std::cout << "Tamaño RPP: " << backtrackArray[toStep-1]->RPP.size() << std::endl;
+        int posicion = std::distance(backtrackArray[toStep-1]->RPP.begin(), it);
+        std::cout << BLUE << "eliminar de RPP: " << backtrackArray[toStep-1]->RPP[posicion] << " del historial: " << toStep << RESET << std::endl;
+        backtrackArray[toStep-1]->RPP.erase(it);
+        std::cout << "elimincion completada, nuevo tamaño: " << backtrackArray[toStep-1]->RPP.size() << std::endl;
+    }
+    do {
+        if (toStep > 0)
+            toStep--;
+        else break;
+    } while (backtrackArray[toStep]->RPP.size() == 0);
+    unCollapseMap = backtrackArray[toStep]->cMap;
+    RPP = backtrackArray[toStep]->RPP;
+    step = toStep;
+    */
+    
 }
 
 int main(int argc, char* argv[]) {
@@ -780,25 +828,34 @@ int main(int argc, char* argv[]) {
             }
             step++;
         }
+        //area de backtracking
+        /*
+        
+        
+        */
+
         if (RPP.size() == 0 && !mapCompleted(unCollapseMap)) {
             std::cout << YELLOW << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
             //std::exit(0);
             backtrackingRequested = true;
             backtrackUses++;
             std::cout << "usos del backtracking: " << backtrackUses << std::endl;
-            std::cout << "toStep: " << toStep << std::endl;
 
+            //cambiar esto, solo retrocede en caso de que el backtracking anterior no haya llegado a nada
             if (lastStep > 0)
                 lastStep--;
 
             toStep = lastStep;
             std::cout << "lastStep: " << lastStep << std::endl;
 
-            revertToStep(backtracking, unCollapseMap, RPP, lowestEntropyTilePos, step, toStep);
+            //llamada a la funcion
+            revertToStep(backtracking, unCollapseMap, RPP, step, toStep);
             std::cout << "regresion exitosa " << std::endl;
+
+            //busqueda y limpieza de los elementos que estaban por sobre el punto de busqueda
             backtracking.erase(std::remove_if(backtracking.begin(), backtracking.end(), [toStep](Backtracking* Obj) {
                 return Obj->step > toStep; }), backtracking.end());
-
+            //limpieza de la memoria
             for (auto it = backtracking.begin(); it != backtracking.end(); ++it) {
                 if ((*it)->step > toStep) {
                     delete* it;
@@ -806,26 +863,38 @@ int main(int argc, char* argv[]) {
                 }
             }
             std::cout << "memoria limpiada  " << std::endl;
+            //vacio del arreglo
+
+            //std remove, eliminar erase
             backtracking.erase(std::remove(backtracking.begin(), backtracking.end(), nullptr), backtracking.end());
             std::cout << "backtracking size : " << backtracking.size() << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
         else {
             std::cout << YELLOW << "reintentar con otro punto" << RESET << std::endl;
 
         }
+
         std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
         std::cout << PURPLE << "punto de iteracion" << RESET << std::endl;
+        std::cout << "usos del backtracking: " << backtrackUses << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;
         //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
+    for (int i = 0; i < backtracking.size(); i++) {
+        delete backtracking[i];
+        backtracking[i] = nullptr;
+    }
 
+    backtracking.clear();
+    std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
+    printMap(unCollapseMap, Y, PosibleTiles.size());
     std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
     std::cout << "usos del backtracking: " << backtrackUses << std::endl;
     //construccion de una nueva imagen
     reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
-
+    std::cout << "Mapa reconstruido exitosamente." << std::endl;
     //guardado de la imagen en un nuevo archivo
     if (writeImagePPM("imagen_Generada.ppm", Y, Y, pixelVectorSalida)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
