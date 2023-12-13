@@ -56,6 +56,44 @@ public:
         return otherPixeles == pixelesCoo;
     }
 
+    std::vector<Pixel> rotatePattern(const std::vector<Pixel>& Pattern) {
+        std::vector<Pixel> newPattern;
+        for (int i = 0; i < N; i++) {
+            for (int j = N - 1; j >= 0; j--) {
+                newPattern.push_back(Pattern[N * j + i]);
+            }
+        }
+        return newPattern;
+    }
+    std::vector<int> rotatePatternCoo(const std::vector<int>& Pattern) {
+        std::vector<int> newPattern;
+        for (int i = 0; i < N; i++) {
+            for (int j = N - 1; j >= 0; j--) {
+                newPattern.push_back(Pattern[N * j + i]);
+            }
+        }
+        return newPattern;
+    }
+    std::vector<Pixel> mirrorPattern(const std::vector<Pixel>& Pattern) {
+        std::vector<Pixel> newPattern;
+
+        for (int i = 0; i < N; i++) {
+            for (int j = N - 1; j >= 0; j--) {
+                newPattern.push_back(Pattern[j + i * N]);
+            }
+        }
+        return newPattern;
+    }
+    std::vector<int> mirrorPatternCoo(const std::vector<int>& Pattern) {
+        std::vector<int> newPattern;
+
+        for (int i = 0; i < N; i++) {
+            for (int j = N - 1; j >= 0; j--) {
+                newPattern.push_back(Pattern[j + i * N]);
+            }
+        }
+        return newPattern;
+    }
 
     void addPixelVector(std::vector<Pixel> newPixeles) {
         pixeles = newPixeles;
@@ -67,11 +105,11 @@ public:
 class Backtracking {
 public:
     int step;
-    Pattern selectedPatt;
+    int selectedPos;
     std::vector<std::vector<int>> cMap;
-    std::vector<int> RRC;
-    Backtracking(int step, Pattern selectedPatt, std::vector<std::vector<int>> cMap, std::vector<int> RRC) :
-        step(step), selectedPatt(selectedPatt), cMap(cMap), RRC(RRC) {}
+    std::vector<int> RPP;
+    Backtracking(int step, int selectedPos, std::vector<std::vector<int>> cMap, std::vector<int> RPP) :
+        step(step), selectedPos(selectedPos), cMap(cMap), RPP(RPP) {}
 };
 //funcion para inicializar la generación de numeros aleatorios
 void initializeRandomSeed() {
@@ -224,15 +262,40 @@ void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& p
                 tmpVector.push_back(pixelVector[(x + j + i * inputImageWidth)]);
             }
         }
+        for (int i = 0; i < 4; i++) {
+            if (i == 0) {
+                //definir y añadir patron base al arreglo
+                Pattern newPattern(pattArray.size(), N);
+                newPattern.addPixelVector(tmpVector);
+                newPattern.addPixelCooVector(tmpCooVector);
+                pattArray.push_back(newPattern);
 
-        Pattern newPattern(pattArray.size(), N);
-        newPattern.addPixelVector(tmpVector);
-        newPattern.addPixelCooVector(tmpCooVector);
-        pattArray.push_back(newPattern);
+                //añadir espejo del patron inicial
+                Pattern newPatternMirror(pattArray.size(), N);
+                newPatternMirror.addPixelVector(newPatternMirror.mirrorPattern(tmpVector));
+                newPatternMirror.addPixelCooVector(newPatternMirror.mirrorPatternCoo(tmpCooVector));
+                pattArray.push_back(newPatternMirror);
+            }
+            else {
 
+                //añdir rotacion del patron base
+                Pattern newPatternRot(pattArray.size(), N);
+                tmpVector = newPatternRot.rotatePattern(tmpVector);
+                tmpCooVector = newPatternRot.rotatePatternCoo(tmpCooVector);
+                newPatternRot.addPixelVector(tmpVector);
+                newPatternRot.addPixelCooVector(tmpCooVector);
+                pattArray.push_back(newPatternRot);
 
+                //rot espejo de la rotacion
+                Pattern newPatternRotMirror(pattArray.size(), N);
+                newPatternRotMirror.addPixelVector(newPatternRotMirror.mirrorPattern(tmpVector));
+                newPatternRotMirror.addPixelCooVector(newPatternRotMirror.mirrorPatternCoo(tmpCooVector));
+                pattArray.push_back(newPatternRotMirror);
+            }
+        }
         tmpVector.clear();
         tmpCooVector.clear();
+
     }
 
     int weight = 0;
@@ -257,16 +320,16 @@ void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& p
         }
     pattArray.clear();
     pattArray = tmpPattArray;
-    std::cout << "Patrones totales obtenidos de la imagen: " << pattArray.size() << std::endl;
 
+    std::cout << "Patrones totales obtenidos de la imagen: " << pattArray.size() << std::endl;
     std::sort(pattArray.begin(), pattArray.end(), comparePattern);
+
     for (int i = 0; i < pattArray.size(); i++) {
         pattArray[i].id = i;
     }
 
     std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
-}
-//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
+}//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
 void initializePosMap(std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& posibleTiles, int Y) {
     Y = Y * Y;
     unCollapseMap.resize(Y);
@@ -494,7 +557,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
             if (!U && !S && !E && !O) {
                 RPP.erase(RPP.begin() + i);
                 i--;
-                std::cout <<RED << "X" <<RESET;
+                std::cout << RED << "X" << RESET;
             }
         }
         std::cout << " ";
@@ -521,78 +584,6 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     }
     return true;
 }
-//funcion para obtener los posibles candidatos para donde empezar a propagar
-void getMapPropagationPos(std::vector<int>& posiblePos, const std::vector<std::vector<int>>& unCollapseMap, const std::vector<int>& regionesRecienColapsadas, const int N, const int Y) {
-    int distance = 1;
-    posiblePos.clear();
-    bool U = false, S = false, E = false, W = false, C = false, contains = false;
-
-    std::vector<int> borders;
-    //bordes en la zona de colapso
-    int begin = regionesRecienColapsadas.front(), end = regionesRecienColapsadas.back();
-    for (int i = 0, j = 1; i < regionesRecienColapsadas.size(); i++, j++) {
-        if ((j % N) == 1 || (j % N) == 0) {
-            borders.push_back(regionesRecienColapsadas[i]);
-        }
-        else if (regionesRecienColapsadas[i] <= begin + N) {
-            borders.push_back(regionesRecienColapsadas[i]);
-        }
-        else if (regionesRecienColapsadas[i] >= end - N) {
-            borders.push_back(regionesRecienColapsadas[i]);
-        }
-
-    }
-    /*
-    for (int i = 0; i < borders.size(); i++) {
-        U = false, S = false, W = false, E = false;
-        if (borders[i] / Y > 0)
-            if (unCollapseMap[borders[i] - Y].size() > 1) {
-                posiblePos.push_back(borders[i] - Y); U = true;
-            }
-        if (borders[i] / Y < Y - 1)
-            if (unCollapseMap[borders[i] + Y].size() > 1) {
-                posiblePos.push_back(borders[i] + Y); S = true;
-            }
-        if (borders[i] % Y < Y - 1)
-            if (unCollapseMap[borders[i] + 1].size() > 1) {
-                posiblePos.push_back(borders[i] + 1);E = true;
-            }
-        if (borders[i] % Y > 0)
-            if (unCollapseMap[borders[i] - 1].size() > 1) {
-                posiblePos.push_back(borders[i] - 1);W = true;
-            }
-
-        if (U) {
-            if (E) {
-                if(unCollapseMap[borders[i] - Y + 1].size() > 1)
-                    posiblePos.push_back(borders[i] - Y + 1);
-            }
-            if (W) {
-                if (unCollapseMap[borders[i] - Y - 1].size() > 1)
-                    posiblePos.push_back(borders[i] - Y - 1);
-            }
-        }
-        if (S) {
-            if (E) {
-                if (unCollapseMap[borders[i] + Y + 1].size() > 1)
-                    posiblePos.push_back(borders[i] + Y + 1);
-            }
-            if (W) {
-                if (unCollapseMap[borders[i] + Y - 1].size() > 1)
-                    posiblePos.push_back(borders[i] + Y - 1);
-            }
-        }
-
-        //std::cout << "el borde " << borders[i] << " tiene disponible N " << U << " S " << S << " E " << E << " W " << W << std::endl;
-    }
-    */
-    posiblePos = borders;
-    std::cout << "posiciones de propagacion posibles : ";
-    for (int i = 0; i < posiblePos.size(); i++) {
-        std::cout << posiblePos[i] << " ";
-    }
-    std::cout << std::endl;
-}
 //funcion para crear un mapa con los valores de los patrones candidatos para la propagacion
 void reduceMap(const std::vector<Pattern>& pattern, std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos) {
     for (int i = 0; i < pattern.size(); i++) {
@@ -608,12 +599,12 @@ void reduceMap(const std::vector<Pattern>& pattern, std::vector<std::vector<int>
 void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, std::vector<Pattern>& pattern, int pos, const int N, const int Y) {
 
     //distancia de N + 1 para buscar posibles candidatos
-    std::vector<int> posiblePos;
-    //getMapPropagationPos(posiblePos, unCollapseMap, RPP, N, Y);
+    std::vector<int> posiblePos = RPP;
     std::vector<Pattern> propagationPattern;
     std::vector<std::vector<int>> tmpUnCollapseMap;
     tmpUnCollapseMap.resize(Y * Y);
     auto newPattern = pattern.front();
+
     for (int i = 0; i < posiblePos.size(); i++) {
         propagationPattern.clear();
         std::cout << "RPP: " << posiblePos[i] << " /";
@@ -623,9 +614,15 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
             }
         }
         std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
-        if (propagationPattern.size() == 0)
-            RPP.erase(RPP.begin() + i);
-        if (propagationPattern.size() > 0) {
+        if (propagationPattern.size() == 0) {
+            std::cout << "eliminar posicion sin patrones:" << posiblePos[i] <<std::endl;
+            auto it = std::find(RPP.begin(),RPP.end(), posiblePos[i]);
+            // Verificar si se encontró el elemento
+            if (it != RPP.end()) {
+                RPP.erase(RPP.begin() + i);
+            }
+        }else {
+            std::cout << "reducir mapa" << std::endl;
             reduceMap(propagationPattern, tmpUnCollapseMap, N, Y, posiblePos[i]);
         }
     }
@@ -701,10 +698,9 @@ void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& 
 
 }
 
-void revertToStep(std::vector<Backtracking*>& backtrackArray, std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& regionesRecienColapsadas, Pattern& pattern, int& step, int toStep) {
+void revertToStep(std::vector<Backtracking*>& backtrackArray, std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, int selectedPos, int& step, int toStep) {
     unCollapseMap = backtrackArray[toStep]->cMap;
-    regionesRecienColapsadas = backtrackArray[toStep]->RRC;
-    pattern = backtrackArray[toStep]->selectedPatt;
+    RPP = backtrackArray[toStep]->RPP;
     step = toStep;
 }
 
@@ -775,14 +771,16 @@ int main(int argc, char* argv[]) {
             propagate(unCollapseMap, RPP, patternArray, lowestEntropyTilePos, N, Y);
             printMap(unCollapseMap, Y, PosibleTiles.size());
 
-            Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, RPP);
+            std::cout << "Guardar nuevo estado de backtracking" << std::endl;
+            Backtracking newBacktrack(step, lowestEntropyTilePos, unCollapseMap, RPP);
             backtracking.push_back(new Backtracking(newBacktrack));
+            std::cout << "Guardado exitoso" << std::endl;
             if (!backtrackingRequested) {
                 lastStep = step;
             }
             step++;
         }
-        if(RPP.size() == 0) {
+        if (RPP.size() == 0 && !mapCompleted(unCollapseMap)) {
             std::cout << YELLOW << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
             //std::exit(0);
             backtrackingRequested = true;
@@ -796,7 +794,8 @@ int main(int argc, char* argv[]) {
             toStep = lastStep;
             std::cout << "lastStep: " << lastStep << std::endl;
 
-            revertToStep(backtracking, unCollapseMap, RPP, lastSelectedPattern, step, toStep);
+            revertToStep(backtracking, unCollapseMap, RPP, lowestEntropyTilePos, step, toStep);
+            std::cout << "regresion exitosa " << std::endl;
             backtracking.erase(std::remove_if(backtracking.begin(), backtracking.end(), [toStep](Backtracking* Obj) {
                 return Obj->step > toStep; }), backtracking.end());
 
@@ -806,10 +805,10 @@ int main(int argc, char* argv[]) {
                     *it = nullptr;
                 }
             }
-
+            std::cout << "memoria limpiada  " << std::endl;
             backtracking.erase(std::remove(backtracking.begin(), backtracking.end(), nullptr), backtracking.end());
             std::cout << "backtracking size : " << backtracking.size() << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         }
         else {
             std::cout << YELLOW << "reintentar con otro punto" << RESET << std::endl;
@@ -821,32 +820,6 @@ int main(int argc, char* argv[]) {
         std::cout << std::endl;
         //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    /*
-    //seleccionar patron compatible y collapsar
-    std::cout << BLUE << "COLAPSAR" << RESET << std::endl;
-    if (!Collapse(unCollapseMap, regionesRecienColapsadas, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos)) {
-        //backtracking
-        toStep = step - 1;
-        revertToStep(backtracking, unCollapseMap, regionesRecienColapsadas, lastSelectedPattern, step, toStep);
-
-        while (backtracking.size() > toStep) {
-            backtracking.pop_back();
-        }
-    }
-    else {
-        printMap(unCollapseMap, Y, PosibleTiles.size());
-        std::cout << " " << std::endl;
-        std::cout << BLUE << "PROPAGAR" << RESET << std::endl;
-        propagate(unCollapseMap, regionesRecienColapsadas, patternArray, lowestEntropyTilePos, N, Y);
-        printMap(unCollapseMap, Y, PosibleTiles.size());
-
-        Backtracking newBacktrack(step, lastSelectedPattern, unCollapseMap, regionesRecienColapsadas);
-        backtracking.push_back(newBacktrack);
-        step++;
-    }
-
-}
-*/
 
     std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
     std::cout << "usos del backtracking: " << backtrackUses << std::endl;
