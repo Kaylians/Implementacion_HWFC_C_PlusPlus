@@ -1,14 +1,19 @@
+//link de reunion:
+//https://reuna.zoom.us/my/nbarriga
+
 // Ruta:
 // cd /mnt/d/Memoria\ HWFC/Code/test2/src
 
 // g++ -g -Wall -Wextra -o WFC WFC.cpp
 
 // Compilación con boost:
-// g++ Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp ReadWrite.cpp -o Main -lboost_program_options
+// g++ Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp -o Main -lboost_program_options
 
 // Ejecución: 
 // ./Main --mode "WFC" --pattern 2 3 --image "example2.ppm" --size 10
 
+// gdb ./Main
+// r (argumento)
 
 // valgrind ./WFC
 // valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./WFC
@@ -53,20 +58,12 @@
 #include "MWFC.h"
 #include "HWFC.h"
 #include "ReadWrite.h"
+#include "DebugUtility.h"
 #include <thread>
 
 #include <boost/program_options.hpp>
 
 namespace po = boost::program_options;
-
-//colores de prueba
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define WHITE    "\033[37m"
-#define PURPLE "\033[35m"
 
 //funcion para inicializar la generación de numeros aleatorios
 void initializeRandomSeed() {
@@ -97,68 +94,6 @@ void defineTiles(const std::vector<Pixel>& pixelVector, std::vector<Pixel>& posi
     for (const auto& pixel : pixelVector)
         if (!Pixel::contienePixel(posibleTiles, pixel))
             posibleTiles.push_back(pixel);
-}
-//funciona para imprimir el mapa que son valores int
-void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi) {
-    for (int i = -1; i < size; i++) {
-        if (i == -1) {
-            std::cout << BLUE << " X" << " " << RESET << "|| ";
-            for (int z = 0; z < size; z++) {
-                if (z < 10) {
-
-                    std::cout << BLUE << " " << z << " " << RESET << "|| ";
-                }
-                else {
-
-                    std::cout << BLUE << z << " " << RESET << "|| ";
-                }
-            }
-        }
-        else {
-            for (int j = -1; j < size; j++) {
-                if (j == -1) {
-                    if (i < 10) {
-
-                        std::cout << " " << BLUE << i << RESET << " || ";
-                    }
-                    else {
-
-                        std::cout << BLUE << i << RESET << " || ";
-                    }
-                }
-                else if (unCollapseMap[j + i * size].size() == 1) {
-                    if (unCollapseMap[j + i * size].front() < 10) {
-                        if (unCollapseMap[j + i * size].front() == 0)
-                            std::cout << GREEN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                        else if (unCollapseMap[j + i * size].front() == 1)
-                            std::cout << RED << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                        else if (unCollapseMap[j + i * size].front() == 2)
-                            std::cout << BLUE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                        else if (unCollapseMap[j + i * size].front() == 3)
-                            std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                        else if (unCollapseMap[j + i * size].front() == 4)
-                            std::cout << YELLOW << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                    }
-                    else {
-                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
-                    }
-                }
-                else if (unCollapseMap[j + i * size].size() == 0) {
-                    std::cout << "  " << " || ";
-                }
-                else if (unCollapseMap[j + i * size].size() == posibi) {
-                    std::cout << "  " << " || ";
-                }
-                else if (unCollapseMap[j + i * size].size() < posibi)
-                    std::cout << PURPLE << " " << unCollapseMap[j + i * size].size() << RESET << " || ";
-                else
-                    std::cout << "X ||";
-            }
-        }
-
-        std::cout << std::endl;
-    }
-    std::cout << "---------------" << std::endl;
 }
 //funcion para inicializar el mapa
 void initializePosMap(std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& posibleTiles, int Y) {
@@ -487,10 +422,6 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     return true;
 }
 
-void ControlPoint(int i) {
-    std::cout << "Control point " << i << std::endl;
-}
-
 int main(int argc, char* argv[]) {
     std::vector<int> N;
     std::vector<int> HN;
@@ -589,6 +520,7 @@ int main(int argc, char* argv[]) {
         definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
     }
     else {
+        //eliminar la separación despues de las pruebas
         if(mode == "MWFC")
         definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
         if (mode == "HWFC") {

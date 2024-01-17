@@ -1,6 +1,7 @@
 #include "MWFC.h"
 #include "Pixel.h"
 #include "Pattern.h"
+#include "DebugUtility.h"
 
 #include <iostream>
 #include <vector>
@@ -21,39 +22,48 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
 
     //seperacion de la imagen en multiples patrones
     //for (int y = 0; y <= inputImageHeight - N; y++)
+    int counter = 0;
+    // inputImageWidth * inputImageHeight - (inputImageWidth * (N[z] - 1)) - N[z]+
+
+    // X e Y dan el punto de inicio
+    // I y J dan el las areas del patron
+    int pos = 0;
     for (int z = 0; z < N.size(); z++) {
-        for (int x = 0; x <= inputImageWidth * inputImageHeight - (inputImageWidth * (N[z] - 1)) - N[z]; x++) {
-            for (int i = 0; i < N[z]; i++) {
-                for (int j = 0; j < N[z]; j++) {
-                    if (i == 0 || i == N[z] - 1 || j == 0 || j == N[z]-1) {
-                        auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[(x + j + i * inputImageWidth)]);
-                        tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
-                        tmpVector.push_back(pixelVector[(x + j + i * inputImageWidth)]);
-                        std::cout << tmpCooVector.back();
-                    }
-                    else {
-                        tmpCooVector.push_back(posibleTiles.size());
-                        tmpVector.push_back(posibleTiles.back());
-                        std::cout << " ";
-                    }
+        for (int y = 0; y <= inputImageHeight - N[z]; y++) {
+            for (int x = 0; x <= inputImageWidth - N[z]; x++) {
 
-                    
+                for (int i = 0; i < N[z]; i++) {
+                    for (int j = 0; j < N[z]; j++) {
+                        pos = (x + j + y * inputImageHeight + i * inputImageHeight);
+                        if (i == 0 || i == N[z] - 1 || j == 0 || j == N[z] - 1) {
+                            auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[pos]);
+                            tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
+                            tmpVector.push_back(pixelVector[pos]);
+                            std::cout << tmpCooVector.back();
+                        }
+                        else {
+                            tmpCooVector.push_back(posibleTiles.size());
+                            tmpVector.push_back(posibleTiles.back());
+                            std::cout << " ";
+                        }
 
-                    Pattern newPattern(hPattArray.size(), N[z]);
-                    newPattern.addPixelVector(tmpVector);
-                    newPattern.addPixelCooVector(tmpCooVector);
-                    newPattern.highPattern = true;
-                    hPattArray.push_back(newPattern);
-                    
+                    }
+                    std::cout << std::endl;
                 }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
-            std::cout << std::endl;
-            std::cout << std::endl;
-            tmpVector.clear();
-            tmpCooVector.clear();
+                ControlPoint(counter);
+                counter++;
 
+                Pattern newPattern(hPattArray.size(), N[z]);
+                newPattern.addPixelVector(tmpVector);
+                newPattern.addPixelCooVector(tmpCooVector);
+                newPattern.highPattern = true;
+                hPattArray.push_back(newPattern);
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                tmpVector.clear();
+                tmpCooVector.clear();
+            }
         }
     }
     //std::exit(EXIT_SUCCESS);
