@@ -19,10 +19,10 @@ struct Pixel {
     static bool contienePixel(const std::vector<Pixel>& vector, const Pixel& pixel) {
         for (const auto& elemento : vector) {
             if (elemento.R == pixel.R && elemento.G == pixel.G && elemento.B == pixel.B) {
-                return true; // Se encontrÃ³ un elemento igual
+                return true; // Se encontró un elemento igual
             }
         }
-        return false; // No se encontrÃ³ ningÃºn elemento igual
+        return false; // No se encontró ningún elemento igual
     }
 
 };

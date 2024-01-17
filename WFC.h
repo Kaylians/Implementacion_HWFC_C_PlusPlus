@@ -8,8 +8,7 @@
 #include <vector>
 #include <string>
 
-bool comparePattern(const Pattern& a, const Pattern& b);
-void definePatterns(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N);
+void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, int N);
 
 
 #endif 

@@ -4,12 +4,12 @@
 // g++ -g -Wall -Wextra -o WFC WFC.cpp
 
 // Compilación con boost:
-// g++ Main.cpp pattern.cpp WFC.cpp -o Main -lboost_program_options
+// g++ Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp ReadWrite.cpp -o Main -lboost_program_options
 
 // Ejecución: 
 // ./Main --mode "WFC" --pattern 2 3 --image "example2.ppm" --size 10
 
-#include "Pattern.h"
+
 // valgrind ./WFC
 // valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./WFC
 // valgrind --tool=cachegrind ./WFC
@@ -46,10 +46,12 @@
 #include <cstdlib>
 #include <ctime>
 
-
+#include "Pattern.h"
 #include "Main.h"
 #include "Pixel.h"
 #include "WFC.h"
+#include "MWFC.h"
+#include "HWFC.h"
 #include "ReadWrite.h"
 #include <thread>
 
@@ -458,7 +460,6 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
             }
         }
         else {
-            std::cout << "reducir mapa" << std::endl;
             reduceMap(propagationPattern, tmpUnCollapseMap, Y, posiblePos[i]);
         }
     }
@@ -476,8 +477,6 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
     propagationPattern.clear();
     tmpUnCollapseMap.clear();
 }
-//funcion para reconstruir una imagen a partir del mapa generado
-
 //verifica si todas las posiciones del mapa estan colapsadas
 bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     for (int i = 0; i < unCollapseMap.size(); i++) {
@@ -487,13 +486,14 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     }
     return true;
 }
-//creación de una imagen con un mosaico de los patrones
+
 void ControlPoint(int i) {
     std::cout << "Control point " << i << std::endl;
 }
 
 int main(int argc, char* argv[]) {
     std::vector<int> N;
+    std::vector<int> HN;
     std::string imageName;
     std::string mode;
     int Y;
@@ -503,6 +503,7 @@ int main(int argc, char* argv[]) {
         ("help", "Mostrar información de ayuda")
         ("mode", po::value<std::string>(&mode), "Ingresar modo del algoritmo: WFC, MWFC, HWFC")
         ("pattern", po::value<std::vector<int>>(&N)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
+        ("Hpattern", po::value<std::vector<int>>(&HN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
         ("image", po::value<std::string>(&imageName), "Ingresar nombre del archivo en formato .PPM")
         ("size", po::value<int>(&Y), "Ingresar tamano de la imagen de salida");
     try {
@@ -530,7 +531,18 @@ int main(int argc, char* argv[]) {
             std::cout << std::endl;
         }
         else {
-            std::cout << "Valores no ingresados." << std::endl;
+            std::cout << "Valores de patrones no ingresados." << std::endl;
+        }
+
+        if (vm.count("Hpattern")) {
+            std::cout << "Usar patrones de: ";
+            for (int val : HN) {
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones de jerarquia no ingresados." << std::endl;
         }
 
         if (vm.count("image")) {
@@ -571,9 +583,19 @@ int main(int argc, char* argv[]) {
 
     //defincion de los patrones posibles que puede adoptar el mapa
     std::vector<Pattern> patternArray;
-    definePatterns(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
+    std::vector<Pattern> highPatternArray;
 
-
+    if (mode == "WFC") {
+        definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
+    }
+    else {
+        if(mode == "MWFC")
+        definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
+        if (mode == "HWFC") {
+            definePatternsHWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+        }
+    }
+    
     //mapa de superposiciones posibles
     std::vector<std::vector<int>> unCollapseMap;
     std::vector<int> RPP;
@@ -618,13 +640,10 @@ int main(int argc, char* argv[]) {
             printMap(unCollapseMap, Y, PosibleTiles.size());
 
             if (RPP.size() > 0) {
-                std::cout << "Guardar nuevo estado de backtracking" << std::endl;
                 BT_cMap.push_back(unCollapseMap);
-                std::cout << "Guardar nuevo estado de backtracking" << std::endl;
                 BT_pos.push_back(lowestEntropyTilePos);
-                std::cout << "Guardar nuevo estado de backtracking" << std::endl;
                 BT_RPP.push_back(RPP);
-                std::cout << "Guardado completado" << std::endl;
+                std::cout << "Guardado de backtracking completado" << std::endl;
                 step++;
 
                 std::cout << "Posiciones restantes: ";

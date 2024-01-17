@@ -42,13 +42,13 @@ bool writeImagePPM(const std::string& r, int w, int h, const std::vector<Pixel>&
 
     return true;
 }
-
+//funcion para reconstruir una imagen a partir del mapa generado
 void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& tiles) {
     for (int i = 0; i < unCollapseMap.size(); i++) {
         pixelVectorSalida.push_back(tiles[unCollapseMap[i].front()]);
     }
 }
-
+//creación de una imagen con un mosaico de los patrones
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y) {
     int lenght = pattern.front().N;
     int wAmount = lenght * 10 + 10;
