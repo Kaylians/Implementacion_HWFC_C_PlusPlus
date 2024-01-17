@@ -31,7 +31,6 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
     for (int z = 0; z < N.size(); z++) {
         for (int y = 0; y <= inputImageHeight - N[z]; y++) {
             for (int x = 0; x <= inputImageWidth - N[z]; x++) {
-
                 for (int i = 0; i < N[z]; i++) {
                     for (int j = 0; j < N[z]; j++) {
                         pos = (x + j + y * inputImageHeight + i * inputImageHeight);
@@ -58,8 +57,6 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                 newPattern.addPixelCooVector(tmpCooVector);
                 newPattern.highPattern = true;
                 hPattArray.push_back(newPattern);
-                std::cout << std::endl;
-                std::cout << std::endl;
                 std::cout << std::endl;
                 tmpVector.clear();
                 tmpCooVector.clear();

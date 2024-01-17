@@ -18,49 +18,52 @@ void definePatternsMWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel
 
     //seperacion de la imagen en multiples patrones
     //for (int y = 0; y <= inputImageHeight - N; y++)
+    int pos = 0;
     for (int z = 0; z < N.size(); z++) {
-        for (int x = 0; x <= inputImageWidth * inputImageHeight - (inputImageWidth * (N[z] - 1)) - N[z]; x++) {
-            for (int i = 0; i < N[z]; i++) {
-                for (int j = 0; j < N[z]; j++) {
-                    auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[(x + j + i * inputImageWidth)]);
-                    tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
-                    tmpVector.push_back(pixelVector[(x + j + i * inputImageWidth)]);
+        for (int y = 0; y <= inputImageHeight - N[z]; y++) {
+            for (int x = 0; x <= inputImageWidth - N[z]; x++) {
+                for (int i = 0; i < N[z]; i++) {
+                    for (int j = 0; j < N[z]; j++) {
+                        pos = (x + j + y * inputImageHeight + i * inputImageHeight);
+                        auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[pos]);
+                        tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
+                        tmpVector.push_back(pixelVector[pos]);
+                    }
                 }
+                for (int i = 0; i < 4; i++) {
+                    if (i == 0) {
+                        //definir y añadir patron base al arreglo
+                        Pattern newPattern(pattArray.size(), N[z]);
+                        newPattern.addPixelVector(tmpVector);
+                        newPattern.addPixelCooVector(tmpCooVector);
+                        pattArray.push_back(newPattern);
+
+                        //añadir espejo del patron inicial
+                        Pattern newPatternMirror(pattArray.size(), N[z]);
+                        newPatternMirror.addPixelVector(newPatternMirror.mirrorPattern(tmpVector));
+                        newPatternMirror.addPixelCooVector(newPatternMirror.mirrorPatternCoo(tmpCooVector));
+                        pattArray.push_back(newPatternMirror);
+                    }
+                    else {
+
+                        //añdir rotacion del patron base
+                        Pattern newPatternRot(pattArray.size(), N[z]);
+                        tmpVector = newPatternRot.rotatePattern(tmpVector);
+                        tmpCooVector = newPatternRot.rotatePatternCoo(tmpCooVector);
+                        newPatternRot.addPixelVector(tmpVector);
+                        newPatternRot.addPixelCooVector(tmpCooVector);
+                        pattArray.push_back(newPatternRot);
+
+                        //rot espejo de la rotacion
+                        Pattern newPatternRotMirror(pattArray.size(), N[z]);
+                        newPatternRotMirror.addPixelVector(newPatternRotMirror.mirrorPattern(tmpVector));
+                        newPatternRotMirror.addPixelCooVector(newPatternRotMirror.mirrorPatternCoo(tmpCooVector));
+                        pattArray.push_back(newPatternRotMirror);
+                    }
+                }
+                tmpVector.clear();
+                tmpCooVector.clear();
             }
-            for (int i = 0; i < 4; i++) {
-                if (i == 0) {
-                    //definir y añadir patron base al arreglo
-                    Pattern newPattern(pattArray.size(), N[z]);
-                    newPattern.addPixelVector(tmpVector);
-                    newPattern.addPixelCooVector(tmpCooVector);
-                    pattArray.push_back(newPattern);
-
-                    //añadir espejo del patron inicial
-                    Pattern newPatternMirror(pattArray.size(), N[z]);
-                    newPatternMirror.addPixelVector(newPatternMirror.mirrorPattern(tmpVector));
-                    newPatternMirror.addPixelCooVector(newPatternMirror.mirrorPatternCoo(tmpCooVector));
-                    pattArray.push_back(newPatternMirror);
-                }
-                else {
-
-                    //añdir rotacion del patron base
-                    Pattern newPatternRot(pattArray.size(), N[z]);
-                    tmpVector = newPatternRot.rotatePattern(tmpVector);
-                    tmpCooVector = newPatternRot.rotatePatternCoo(tmpCooVector);
-                    newPatternRot.addPixelVector(tmpVector);
-                    newPatternRot.addPixelCooVector(tmpCooVector);
-                    pattArray.push_back(newPatternRot);
-
-                    //rot espejo de la rotacion
-                    Pattern newPatternRotMirror(pattArray.size(), N[z]);
-                    newPatternRotMirror.addPixelVector(newPatternRotMirror.mirrorPattern(tmpVector));
-                    newPatternRotMirror.addPixelCooVector(newPatternRotMirror.mirrorPatternCoo(tmpCooVector));
-                    pattArray.push_back(newPatternRotMirror);
-                }
-            }
-            tmpVector.clear();
-            tmpCooVector.clear();
-
         }
     }
 
