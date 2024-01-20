@@ -1,16 +1,16 @@
-//link de reunion:
-//https://reuna.zoom.us/my/nbarriga
+//link de reunion: https://reuna.zoom.us/my/nbarriga
 
-// Ruta:
-// cd /mnt/d/Memoria\ HWFC/Code/test2/src
+// Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
 
 // g++ -g -Wall -Wextra -o WFC WFC.cpp
 
-// Compilación con boost:
 // g++ Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp -o Main -lboost_program_options
 
 // Ejecución: 
+
 // ./Main --mode "WFC" --pattern 2 3 --image "example2.ppm" --size 10
+
+// ./Main --mode "HWFC" --pattern 2 3 --Hpattern 5 --image "example2.ppm" --size 10
 
 // gdb ./Main
 // r (argumento)
@@ -106,8 +106,8 @@ void initializePosMap(std::vector<std::vector<int>>& unCollapseMap, const std::v
     }
 }
 //funcion para elegir la casilla con entropia (posibles colores) disponible en el mapa
-int selectLowestEntropyTile(const std::vector<std::vector<int>>& unCollapseMap, int size, int LastLowestEntropyTilePos, const std::vector<int>& RPP) {
-    int lowestValue = size + 1, lowestID = -1;
+int selectLowestEntropyTile(const std::vector<std::vector<int>>& unCollapseMap, int Posibi, int LastLowestEntropyTilePos, const std::vector<int>& RPP) {
+    int lowestValue = Posibi + 1, lowestID = -1;
     std::cout << "cantidad de regiones de propagacion: " << RPP.size() << std::endl;
     if (RPP.size() > 0) {
         std::cout << RED << "seleccionar entre regiones colapsadas" << RESET << std::endl;
@@ -146,6 +146,12 @@ bool selectPatternAnalizer(Pattern& pattern, const std::vector<std::vector<int>>
                     if (count == N * N) {
                         return false;
                     }
+                }
+                //seccion para patrones de HWFC
+                if (pattern.pixelesCoo[y + x * N] == -1) {
+                    mapCoo.push_back(pos + j + i * Y);
+                    contains = true;
+                    break;
                 }
                 if (pattern.pixelesCoo[y + x * N] == unCollapseMap[pos + j + i * Y][z]) {
                     mapCoo.push_back(pos + j + i * Y);
@@ -240,6 +246,9 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     int stuck_Counter = 0;
 
     std::vector<int> usedPatterns;
+    std::vector<int> uncollapseNode;
+    for (int h = 0; h < posibleTilesN; h++)
+        uncollapseNode.push_back(h);
     auto iterador = usedPatterns.end();
 
     bool finded;
@@ -247,7 +256,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     do {
         do {
             if (usedPatterns.size() == pattern.size()) {
-                std::cout << RED << "!!!!!!!!!!!!!!!!!!!!!!!!! NO HAY SOLUCIONES DISPONIBLES PARA LA POSICION: " << pos << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << pattern.size() << std::endl;
+                std::cout << RED << "!!!!!!!!!!!!!!!!!!!!!!!!! NO HAY SOLUCIONES DISPONIBLES PARA LA POSICION: " << pos << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
                 auto i = std::find(RPP.begin(), RPP.end(), pos);
                 if (i != RPP.end())
                     RPP.erase(i);
@@ -283,8 +292,13 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
             if (unCollapseMap[newPattern.coordinate[j + newPattern.N * i]].size() > 1) {
                 unCollapseMap[newPattern.coordinate[j + newPattern.N * i]].clear();
                 //convierte cada pixel del arreglo a su respectivo valor numerico que lo representa dentro de un collapseMap
-                unCollapseMap[newPattern.coordinate[j + newPattern.N * i]].push_back(newPattern.pixelesCoo[j + newPattern.N * i]);
-                RPP.push_back(newPattern.coordinate[j + newPattern.N * i]);
+                if (newPattern.pixelesCoo[j + newPattern.N * i] == -1) {
+                    unCollapseMap[newPattern.coordinate[j + newPattern.N * i]] = uncollapseNode;
+                }
+                else {
+                    unCollapseMap[newPattern.coordinate[j + newPattern.N * i]].push_back(newPattern.pixelesCoo[j + newPattern.N * i]);
+                    RPP.push_back(newPattern.coordinate[j + newPattern.N * i]);
+                }
             }
         }
     }
@@ -428,6 +442,7 @@ int main(int argc, char* argv[]) {
     std::string imageName;
     std::string mode;
     int Y;
+    int testPos;
 
     po::options_description desc("Opciones permitidas");
     desc.add_options()
@@ -436,7 +451,8 @@ int main(int argc, char* argv[]) {
         ("pattern", po::value<std::vector<int>>(&N)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
         ("Hpattern", po::value<std::vector<int>>(&HN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
         ("image", po::value<std::string>(&imageName), "Ingresar nombre del archivo en formato .PPM")
-        ("size", po::value<int>(&Y), "Ingresar tamano de la imagen de salida");
+        ("size", po::value<int>(&Y), "Ingresar tamano de la imagen de salida")
+        ("test", po::value<int>(&testPos), "valor para ejecutar pruebas");
     try {
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -489,6 +505,13 @@ int main(int argc, char* argv[]) {
         else {
             std::cout << "Valor de tamano no ingresado." << std::endl;
         }
+        if (vm.count("test")) {
+            std::cout << "valor de prueba: " << testPos << std::endl;
+        }
+        else {
+            std::cout << "Valor de tamano no ingresado." << std::endl;
+        }
+
     }
     catch (const boost::program_options::error& e) {
         std::cerr << "Error al analizar las opciones: " << e.what() << std::endl;
@@ -513,20 +536,6 @@ int main(int argc, char* argv[]) {
     defineTiles(pixelVector, PosibleTiles);
 
     //defincion de los patrones posibles que puede adoptar el mapa
-    std::vector<Pattern> patternArray;
-    std::vector<Pattern> highPatternArray;
-
-    if (mode == "WFC") {
-        definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
-    }
-    else {
-        //eliminar la separación despues de las pruebas
-        if(mode == "MWFC")
-        definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
-        if (mode == "HWFC") {
-            definePatternsHWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
-        }
-    }
     
     //mapa de superposiciones posibles
     std::vector<std::vector<int>> unCollapseMap;
@@ -546,6 +555,27 @@ int main(int argc, char* argv[]) {
     bool backtrackingRequested = true;
     Pattern lastSelectedPattern(0, 0);
 
+    std::vector<Pattern> patternArray;
+    std::vector<Pattern> highPatternArray;
+
+    if (mode == "WFC") {
+        definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
+    }
+    else {
+        //eliminar la separación despues de las pruebas
+        if (mode == "MWFC")
+            definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
+        if (mode == "HWFC") {
+            definePatternsHWFC(highPatternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+            do {
+                lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
+                //cambiar el HN[0]
+            } while (!HPatternTileSelection(lowestEntropyTilePos, inputImageHeight, HN[0]));
+            Collapse(unCollapseMap, RPP, Y, highPatternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size());
+            printMap(unCollapseMap, Y, PosibleTiles.size());
+        }
+    }
+
     int controlPointN = 0;
     while (!mapCompleted(unCollapseMap)) {
         std::cout << PURPLE << "step: " << step << RESET << std::endl;
@@ -561,6 +591,7 @@ int main(int argc, char* argv[]) {
             lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
             std::cout << YELLOW << "Posicion con la entropia más baja: " << lowestEntropyTilePos << RESET << std::endl;
         }
+        lowestEntropyTilePos = 1;
 
         std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
         if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size())) {

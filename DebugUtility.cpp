@@ -70,8 +70,11 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
     std::cout << "---------------" << std::endl;
 }
 void ControlPoint(int i) {
-    std::cout << "Control point " << i << std::endl;
+    std::cout << PURPLE << "Control point " << YELLOW<< i << RESET << std::endl;
+}
+void ControlPointNoText(int i) {
+    std::cout << RED << i << RESET << std::endl;
 }
 void ControlString(std::string text) {
-    std::cout << text << std::endl;
+    std::cout << YELLOW << text << RESET << std::endl;
 }

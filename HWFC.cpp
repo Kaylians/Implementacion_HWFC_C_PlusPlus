@@ -8,12 +8,20 @@
 #include <string>
 #include <algorithm>
 
-//eliminar
-#include <cstdlib>
+
+
 
 //funcion para ver si dos patrones son iguales
 bool comparePatternHWFC(const Pattern& a, const Pattern& b) {
     return a.weight > b.weight;
+}
+bool HPatternTileSelection(const int pos, const int Y, const int N) {
+    if (pos % Y - (N - 1) >= 0 || pos % Y + (N - 1) < Y) {
+        if (pos / Y - (N - 1) >= 0 || pos / Y + (N - 1) < Y) {
+            return true;
+        }
+    }
+    return false;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
 void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N) {
@@ -38,18 +46,18 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                             auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[pos]);
                             tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
                             tmpVector.push_back(pixelVector[pos]);
-                            std::cout << tmpCooVector.back();
+                            //std::cout << tmpCooVector.back();
                         }
                         else {
-                            tmpCooVector.push_back(posibleTiles.size());
+                            tmpCooVector.push_back(-1);
                             tmpVector.push_back(posibleTiles.back());
-                            std::cout << " ";
+                            //std::cout << " ";
                         }
 
                     }
-                    std::cout << std::endl;
+                    //std::cout << std::endl;
                 }
-                ControlPoint(counter);
+                //ControlPoint(counter);
                 counter++;
 
                 Pattern newPattern(hPattArray.size(), N[z]);
@@ -57,13 +65,11 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                 newPattern.addPixelCooVector(tmpCooVector);
                 newPattern.highPattern = true;
                 hPattArray.push_back(newPattern);
-                std::cout << std::endl;
                 tmpVector.clear();
                 tmpCooVector.clear();
             }
         }
     }
-    //std::exit(EXIT_SUCCESS);
     std::vector<Pattern> tmpPattArray;
     for (int i = 0; i < hPattArray.size(); i++)
         if (hPattArray[i].pattern) {

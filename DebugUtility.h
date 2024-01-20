@@ -10,6 +10,7 @@
 
 void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi);
 void ControlPoint(int i);
+void ControlPointNoText(int i);
 void ControlString(std::string text);
 
 #endif 
