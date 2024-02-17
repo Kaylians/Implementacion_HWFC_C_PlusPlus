@@ -1,6 +1,8 @@
 #include "MWFC.h"
+#include "WFC.h"
 #include "Pixel.h"
 #include "Pattern.h"
+#include "DebugUtility.h"
 
 #include <iostream>
 #include <vector>
@@ -30,71 +32,29 @@ void definePatternsMWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel
                         tmpVector.push_back(pixelVector[pos]);
                     }
                 }
-                for (int i = 0; i < 4; i++) {
-                    if (i == 0) {
-                        //definir y añadir patron base al arreglo
-                        Pattern newPattern(pattArray.size(), N[z]);
-                        newPattern.addPixelVector(tmpVector);
-                        newPattern.addPixelCooVector(tmpCooVector);
-                        pattArray.push_back(newPattern);
 
-                        //añadir espejo del patron inicial
-                        Pattern newPatternMirror(pattArray.size(), N[z]);
-                        newPatternMirror.addPixelVector(newPatternMirror.mirrorPattern(tmpVector));
-                        newPatternMirror.addPixelCooVector(newPatternMirror.mirrorPatternCoo(tmpCooVector));
-                        pattArray.push_back(newPatternMirror);
-                    }
-                    else {
+                Pattern newPattern(pattArray.size(), N[z]);
+                newPattern.addPixelVector(tmpVector);
+                newPattern.addPixelCooVector(tmpCooVector);
+                pattArray.push_back(newPattern);
 
-                        //añdir rotacion del patron base
-                        Pattern newPatternRot(pattArray.size(), N[z]);
-                        tmpVector = newPatternRot.rotatePattern(tmpVector);
-                        tmpCooVector = newPatternRot.rotatePatternCoo(tmpCooVector);
-                        newPatternRot.addPixelVector(tmpVector);
-                        newPatternRot.addPixelCooVector(tmpCooVector);
-                        pattArray.push_back(newPatternRot);
-
-                        //rot espejo de la rotacion
-                        Pattern newPatternRotMirror(pattArray.size(), N[z]);
-                        newPatternRotMirror.addPixelVector(newPatternRotMirror.mirrorPattern(tmpVector));
-                        newPatternRotMirror.addPixelCooVector(newPatternRotMirror.mirrorPatternCoo(tmpCooVector));
-                        pattArray.push_back(newPatternRotMirror);
-                    }
-                }
                 tmpVector.clear();
                 tmpCooVector.clear();
             }
         }
+        std::cout << "patrones obtenidos para tamaño de patron " << N[z] << ": " << pattArray.size() << std::endl;
     }
 
-    int weight = 0;
-    for (int i = 0; i < pattArray.size(); i++) {
-        if (pattArray[i].pattern) {
-            weight++;
-            for (int j = i + 1; j < pattArray.size(); j++) {
-                if (pattArray[j].N == pattArray[i].N) {
-                    if (pattArray[j].pattern && pattArray[i].comparePixelPattern(pattArray[j].pixeles)) {
-                        pattArray[j].pattern = false;
-                        weight++;
-                    }
-                }
 
-            }
-            pattArray[i].weight = weight;
-        }
-        weight = 0;
-    }
+    //definicion de patrones unicos y marcado/eliminacion de elementos repetidos
+    findUniquePattern(pattArray);
 
-    std::vector<Pattern> tmpPattArray;
-    for (int i = 0; i < pattArray.size(); i++)
-        if (pattArray[i].pattern) {
-            tmpPattArray.push_back(pattArray[i]);
-        }
-    pattArray.clear();
-    pattArray = tmpPattArray;
-
-    std::cout << "Patrones totales obtenidos de la imagen: " << pattArray.size() << std::endl;
+    std::cout << "Patrones base obtenidos de la imagen: " << pattArray.size() << std::endl;
     std::sort(pattArray.begin(), pattArray.end(), comparePatternMWFC);
+
+    //creacion de patrones espejo y rotaciones
+
+    makeMirroRotPattern(pattArray);
 
     for (int i = 0; i < pattArray.size(); i++) {
         pattArray[i].id = i;

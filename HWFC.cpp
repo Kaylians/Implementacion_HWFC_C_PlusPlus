@@ -1,4 +1,6 @@
 #include "MWFC.h"
+#include "WFC.h"
+#include "HWFC.h"
 #include "Pixel.h"
 #include "Pattern.h"
 #include "DebugUtility.h"
@@ -28,14 +30,11 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
 
-    //seperacion de la imagen en multiples patrones
-    //for (int y = 0; y <= inputImageHeight - N; y++)
-    int counter = 0;
-    // inputImageWidth * inputImageHeight - (inputImageWidth * (N[z] - 1)) - N[z]+
+    int counter = 0, pos = 0;
 
     // X e Y dan el punto de inicio
     // I y J dan el las areas del patron
-    int pos = 0;
+
     for (int z = 0; z < N.size(); z++) {
         for (int y = 0; y <= inputImageHeight - N[z]; y++) {
             for (int x = 0; x <= inputImageWidth - N[z]; x++) {
@@ -69,14 +68,10 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                 tmpCooVector.clear();
             }
         }
+        findUniquePattern(hPattArray);
+        makeMirroRotPattern(hPattArray);
     }
-    std::vector<Pattern> tmpPattArray;
-    for (int i = 0; i < hPattArray.size(); i++)
-        if (hPattArray[i].pattern) {
-            tmpPattArray.push_back(hPattArray[i]);
-        }
-    hPattArray.clear();
-    hPattArray = tmpPattArray;
+    
 
     std::cout << "Patrones totales obtenidos de la imagen: " << hPattArray.size() << std::endl;
     std::sort(hPattArray.begin(), hPattArray.end(), comparePatternHWFC);

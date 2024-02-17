@@ -244,13 +244,11 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
 
     auto newPattern = pattern.front();
     int stuck_Counter = 0;
-
     std::vector<int> usedPatterns;
     std::vector<int> uncollapseNode;
     for (int h = 0; h < posibleTilesN; h++)
         uncollapseNode.push_back(h);
     auto iterador = usedPatterns.end();
-
     bool finded;
 
     do {
@@ -536,10 +534,9 @@ int main(int argc, char* argv[]) {
     defineTiles(pixelVector, PosibleTiles);
 
     //defincion de los patrones posibles que puede adoptar el mapa
-    
+
     //mapa de superposiciones posibles
-    std::vector<std::vector<int>> unCollapseMap;
-    std::vector<int> RPP;
+    std::vector<std::vector<int>> unCollapseMap; std::vector<int> RPP;
     RPP.resize(0);
 
     initializePosMap(unCollapseMap, PosibleTiles, Y);
@@ -548,22 +545,18 @@ int main(int argc, char* argv[]) {
     bool randomStart = true;
 
     //almacen de información para backtracking
-    std::vector<int> BT_pos;
-    std::vector<std::vector<std::vector<int>>> BT_cMap;
-    std::vector<std::vector<int>> BT_RPP;
-    int step = 0, toStep = 0, lastStep = 0, backtrackUses = 0;
-    bool backtrackingRequested = true;
+    std::vector<int> BT_pos; std::vector<std::vector<std::vector<int>>> BT_cMap; std::vector<std::vector<int>> BT_RPP;
+    int step = 0, toStep = 0, lastStep = 0, backtrackUses = 0; bool backtrackingRequested = true;
     Pattern lastSelectedPattern(0, 0);
 
-    std::vector<Pattern> patternArray;
-    std::vector<Pattern> highPatternArray;
+    std::vector<Pattern> patternArray, highPatternArray;
 
     if (mode == "WFC") {
         definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
     }
     else {
         //eliminar la separación despues de las pruebas
-        if (mode == "MWFC")
+        //if (mode == "MWFC")
             definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
         if (mode == "HWFC") {
             definePatternsHWFC(highPatternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
@@ -575,7 +568,6 @@ int main(int argc, char* argv[]) {
             printMap(unCollapseMap, Y, PosibleTiles.size());
         }
     }
-
     int controlPointN = 0;
     while (!mapCompleted(unCollapseMap)) {
         std::cout << PURPLE << "step: " << step << RESET << std::endl;
@@ -591,7 +583,6 @@ int main(int argc, char* argv[]) {
             lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
             std::cout << YELLOW << "Posicion con la entropia más baja: " << lowestEntropyTilePos << RESET << std::endl;
         }
-        lowestEntropyTilePos = 1;
 
         std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
         if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size())) {
