@@ -12,6 +12,7 @@ public:
     int weight;
     bool pattern = true;
     bool highPattern = false;
+    bool midPattern = false;
     std::vector<Pixel> pixeles;
     std::vector<int> pixelesCoo;
     std::vector<int> coordinate;

@@ -1,6 +1,7 @@
 #include "MWFC.h"
 #include "WFC.h"
 #include "HWFC.h"
+#include "Main.h"
 #include "Pixel.h"
 #include "Pattern.h"
 #include "DebugUtility.h"
@@ -17,12 +18,13 @@
 bool comparePatternHWFC(const Pattern& a, const Pattern& b) {
     return a.weight > b.weight;
 }
-bool HPatternTileSelection(const int pos, const int Y, const int N) {
-    if (pos % Y - (N - 1) >= 0 || pos % Y + (N - 1) < Y) {
-        if (pos / Y - (N - 1) >= 0 || pos / Y + (N - 1) < Y) {
+bool HPattValidTile(const int pos, const int X, const int Y, const int N) {
+    if (pos % Y - (N - 1) >= 0) 
+        if (pos / Y - (N - 1) >= 0 || pos / Y + (N - 1) < Y)
             return true;
-        }
-    }
+    if (pos % Y + (N - 1) < Y)
+        if (pos / Y - (N - 1) >= 0 || pos / Y + (N - 1) < Y) 
+            return true;
     return false;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
@@ -56,8 +58,6 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                     }
                     //std::cout << std::endl;
                 }
-                //ControlPoint(counter);
-                counter++;
 
                 Pattern newPattern(hPattArray.size(), N[z]);
                 newPattern.addPixelVector(tmpVector);
@@ -68,8 +68,8 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
                 tmpCooVector.clear();
             }
         }
-        findUniquePattern(hPattArray);
-        makeMirroRotPattern(hPattArray);
+        //findUniquePattern(hPattArray);
+        //makeMirroRotPattern(hPattArray);
     }
     
 

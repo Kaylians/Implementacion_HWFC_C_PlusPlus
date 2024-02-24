@@ -1,3 +1,10 @@
+/*funcion o lo que sea para ver cuanta distancia minima puede tener de grosor un color.
+si por ejemplo un pixel se ve siempre solo, nunca esta solo, quizas si es lineal o en que formas se usa
+valor que guarde cuantos pixeles de cada tipo tiene un patron, ver como usar esa informacion
+ver distancia entre patrones, quizas con el punto inicial de donde estaban en el mapa original
+*/
+//siguiente tarea: recortar la cantidad de RPP que se usa, probablemente el High tiene todo el interior como RPP
+
 //link de reunion: https://reuna.zoom.us/my/nbarriga
 
 // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
@@ -8,9 +15,9 @@
 
 // Ejecución: 
 
-// ./Main --mode "WFC" --pattern 2 3 --image "example2.ppm" --size 10
+// ./Main --mode "WFC" --LP 2 3 --image "example2.ppm" --size 10
 
-// ./Main --mode "HWFC" --pattern 2 3 --Hpattern 5 --image "example2.ppm" --size 10
+// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 --image "example.ppm" --size 10
 
 // gdb ./Main
 // r (argumento)
@@ -76,11 +83,11 @@ int getRandom(int min, int max) {
     return rnd;
 }
 //funcion random para elegir el patron que más se repite
-int getRandomPatternWeighted(const std::vector<Pattern> pattern) {
+int getRandomPatternWeighted(const std::vector<Pattern> pattern, int weightMultiplier) {
 
     std::vector<double> pesos(pattern.size());
     for (size_t i = 0; i < pattern.size(); i++) {
-        pesos[i] = pattern[i].weight;
+        pesos[i] = pattern[i].weight * weightMultiplier;
     }
 
     std::random_device rd;
@@ -241,7 +248,6 @@ bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std:
 }
 //funcion para colapsar una posicion a una patron en concreto que coincida por cada pixel con los valores adyacentes al punto
 bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, const int Y, std::vector<Pattern>& pattern, Pattern& selectedPatt, int pos, int posibleTilesN) {
-
     auto newPattern = pattern.front();
     int stuck_Counter = 0;
     std::vector<int> usedPatterns;
@@ -250,7 +256,6 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
         uncollapseNode.push_back(h);
     auto iterador = usedPatterns.end();
     bool finded;
-
     do {
         do {
             if (usedPatterns.size() == pattern.size()) {
@@ -266,14 +271,14 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
                 return false;
             }
             //newPattern = pattern[getRandomPatternWeighted(pattern)];
-            newPattern = pattern[getRandom(0, pattern.size())];
+            newPattern = pattern[getRandomPatternWeighted(pattern,5)];
             iterador = std::find(usedPatterns.begin(), usedPatterns.end(), newPattern.id);
         } while (iterador != usedPatterns.end());
         usedPatterns.push_back(newPattern.id);
         //std::cout << "patron seleccionado: " << newPattern.id << std::endl;
 
         if (selectPattern(newPattern, pattern, unCollapseMap, newPattern.N, Y, pos, false)) {
-            std::cout << "patron util encontrado: " << newPattern.id << std::endl;
+            std::cout << "patron util encontrado: " << newPattern.id << " tamaño :" << newPattern.N << std::endl;
             finded = true;
         }
         else {
@@ -398,12 +403,12 @@ void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& R
         }
         //std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
         if (propagationPattern.size() == 0) {
-            std::cout << "eliminar posicion sin patrones:" << posiblePos[i] << std::endl;
+            //std::cout << "eliminar posicion sin patrones:" << posiblePos[i] << std::endl;
             auto it = std::find(RPP.begin(), RPP.end(), posiblePos[i]);
             // Verificar si se encontró el elemento
             if (it != RPP.end()) {
                 RPP.erase(RPP.begin() + i);
-                std::cout << "eliminacion exitosa" << std::endl;
+                //std::cout << "eliminacion exitosa" << std::endl;
             }
         }
         else {
@@ -436,18 +441,21 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
 
 int main(int argc, char* argv[]) {
     std::vector<int> N;
+    std::vector<int> MN;
     std::vector<int> HN;
     std::string imageName;
     std::string mode;
-    int Y;
+    int Y, X, HN_i;
     int testPos;
 
     po::options_description desc("Opciones permitidas");
     desc.add_options()
         ("help", "Mostrar información de ayuda")
         ("mode", po::value<std::string>(&mode), "Ingresar modo del algoritmo: WFC, MWFC, HWFC")
-        ("pattern", po::value<std::vector<int>>(&N)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
-        ("Hpattern", po::value<std::vector<int>>(&HN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
+        ("LP", po::value<std::vector<int>>(&N)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
+        ("MP", po::value<std::vector<int>>(&MN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
+        ("HP", po::value<std::vector<int>>(&HN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
+        ("HP_i", po::value<int>(&HN_i), "Ingresar iteraciones para patron alto")
         ("image", po::value<std::string>(&imageName), "Ingresar nombre del archivo en formato .PPM")
         ("size", po::value<int>(&Y), "Ingresar tamano de la imagen de salida")
         ("test", po::value<int>(&testPos), "valor para ejecutar pruebas");
@@ -468,26 +476,48 @@ int main(int argc, char* argv[]) {
             std::cout << "modo no valido." << std::endl;
         }
 
-        if (vm.count("pattern")) {
-            std::cout << "Usar patrones de: ";
+        if (vm.count("LP")) {
+            std::cout << "Usar patrones de baja jerarquia: ";
             for (int val : N) {
                 std::cout << val << " ";
             }
             std::cout << std::endl;
         }
         else {
-            std::cout << "Valores de patrones no ingresados." << std::endl;
+            std::cout << "Valores de patrones bajos no ingresados." << std::endl;
         }
 
-        if (vm.count("Hpattern")) {
-            std::cout << "Usar patrones de: ";
+        if (vm.count("MP")) {
+            std::cout << "Usar patrones de medianos de: ";
             for (int val : HN) {
                 std::cout << val << " ";
             }
             std::cout << std::endl;
         }
         else {
-            std::cout << "Valores de patrones de jerarquia no ingresados." << std::endl;
+            std::cout << "Valores de patrones medianos no ingresados." << std::endl;
+        }
+
+        if (vm.count("HP")) {
+            std::cout << "Usar patrones de alta jerarquia: ";
+            for (int val : HN) {
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones altos no ingresados." << std::endl;
+        }
+
+        if (vm.count("HP_i")) {
+            std::cout << "iteraciones de alta jerarquia: ";
+            for (int val : HN) {
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones altos no ingresados." << std::endl;
         }
 
         if (vm.count("image")) {
@@ -517,11 +547,11 @@ int main(int argc, char* argv[]) {
     }
 
     initializeRandomSeed();
-    std::string filename = "./" + imageName, PPM_Identifier;
-    std::ifstream file(filename, std::ios::binary);
-    int inputImageWidth, inputImageHeight;
+    std::string filename = "./" + imageName, PPM_Identifier; std::ifstream file(filename, std::ios::binary); int inputImageWidth, inputImageHeight;
 
-    std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida;
+    std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida, PosibleTiles;
+    std::vector<std::vector<int>> unCollapseMap; std::vector<int> RPP; RPP.resize(0);
+
     //lectura de la imagen de entrada
     if (readImagePPM(imageName, inputImageWidth, inputImageHeight, pixelVector)) {
         std::cout << "Imagen PPM leída exitosamente." << std::endl;
@@ -530,14 +560,7 @@ int main(int argc, char* argv[]) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     //defincion de las casillas
-    std::vector<Pixel> PosibleTiles;
     defineTiles(pixelVector, PosibleTiles);
-
-    //defincion de los patrones posibles que puede adoptar el mapa
-
-    //mapa de superposiciones posibles
-    std::vector<std::vector<int>> unCollapseMap; std::vector<int> RPP;
-    RPP.resize(0);
 
     initializePosMap(unCollapseMap, PosibleTiles, Y);
     int lowestEntropyTilePos;
@@ -549,25 +572,55 @@ int main(int argc, char* argv[]) {
     int step = 0, toStep = 0, lastStep = 0, backtrackUses = 0; bool backtrackingRequested = true;
     Pattern lastSelectedPattern(0, 0);
 
-    std::vector<Pattern> patternArray, highPatternArray;
+    std::vector<Pattern> patternArrayBase, patternArrayLow, patternArrayMid, patternArrayHigh;
 
+    //DEFINICION DE LOS PATRONES
     if (mode == "WFC") {
-        definePatternsWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
+        definePatternsWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
     }
-    else {
-        //eliminar la separación despues de las pruebas
-        //if (mode == "MWFC")
-            definePatternsMWFC(patternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N);
+    if (mode == "MWFC" || mode == "HWFC"){
+        definePatternsMWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N, false);
         if (mode == "HWFC") {
-            definePatternsHWFC(highPatternArray, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+            definePatternsMWFC(patternArrayMid, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, MN, true);
+            definePatternsHWFC(patternArrayHigh, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+        }
+    }
+    //EJECUCION DE JERARQUIA ALTA EN HWFC
+    if (mode == "HWFC") {
+        int HN_max = HN[0];
+        for (int i = 0; i < HN.size(); i++) {
+            if (HN_max < HN[i]) {
+                HN_max = HN[i];
+            }
+        }
+        for (int i = 0; i < HN_i; i++) {
             do {
                 lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
                 //cambiar el HN[0]
-            } while (!HPatternTileSelection(lowestEntropyTilePos, inputImageHeight, HN[0]));
-            Collapse(unCollapseMap, RPP, Y, highPatternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size());
-            printMap(unCollapseMap, Y, PosibleTiles.size());
+            } while (!HPattValidTile(lowestEntropyTilePos, Y, Y, HN_max) && unCollapseMap[lowestEntropyTilePos].size() > 1);
+            Collapse(unCollapseMap, RPP, Y, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size());
+
+            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
         }
+        bool condition = true;
+
+            //for (int i = 0; i < 10; i++) {
+            do {
+
+
+                lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
+                std::cout << YELLOW << "Posicion con la entropia más baja: " << lowestEntropyTilePos << RESET << std::endl;
+                std::cout << GREEN << "COLAPSAR mediano" << RESET << std::endl;
+                Collapse(unCollapseMap, RPP, Y, patternArrayMid, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size());
+                printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, true);
+                ControlPoint(RPP.size());
+            } while (RPP.size() > 10);
+            //}
+        
     }
+    ControlPoint(0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    //std::exit(0);
     int controlPointN = 0;
     while (!mapCompleted(unCollapseMap)) {
         std::cout << PURPLE << "step: " << step << RESET << std::endl;
@@ -585,13 +638,13 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
-        if (Collapse(unCollapseMap, RPP, Y, patternArray, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size())) {
-            printMap(unCollapseMap, Y, PosibleTiles.size());
+        if (Collapse(unCollapseMap, RPP, Y, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size())) {
+            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
 
             std::cout << " " << std::endl;
             std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
-            propagate(unCollapseMap, RPP, patternArray, lowestEntropyTilePos, Y);
-            printMap(unCollapseMap, Y, PosibleTiles.size());
+            propagate(unCollapseMap, RPP, patternArrayLow, lowestEntropyTilePos, Y);
+            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
 
             if (RPP.size() > 0) {
                 BT_cMap.push_back(unCollapseMap);
@@ -647,7 +700,7 @@ int main(int argc, char* argv[]) {
 
         }
         else {
-            std::cout << YELLOW << "reintentar con otro punto" << RESET << std::endl;
+            std::cout << YELLOW << "reintentar con otro punto de propagacion" << RESET << std::endl;
         }
 
         std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
@@ -659,7 +712,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
-    printMap(unCollapseMap, Y, PosibleTiles.size());
+    printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
     std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
     std::cout << "usos del backtracking: " << backtrackUses << std::endl;
     //construccion de una nueva imagen
@@ -670,7 +723,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }
     //dibujar los patrones en una imagen aparte
-    createPatternDraw(patternArray, patterVectorSalida, Y);
+    createPatternDraw(patternArrayBase, patterVectorSalida, Y);
     if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }

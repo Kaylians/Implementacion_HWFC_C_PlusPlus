@@ -14,7 +14,7 @@ bool comparePatternMWFC(const Pattern& a, const Pattern& b) {
     return a.weight > b.weight;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
-void definePatternsMWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N) {
+void definePatternsMWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N, bool midPattern) {
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
 
@@ -36,25 +36,18 @@ void definePatternsMWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel
                 Pattern newPattern(pattArray.size(), N[z]);
                 newPattern.addPixelVector(tmpVector);
                 newPattern.addPixelCooVector(tmpCooVector);
+                newPattern.midPattern = midPattern;
                 pattArray.push_back(newPattern);
-
                 tmpVector.clear();
                 tmpCooVector.clear();
             }
         }
-        std::cout << "patrones obtenidos para tamaño de patron " << N[z] << ": " << pattArray.size() << std::endl;
+        findUniquePattern(pattArray);
+        makeMirroRotPattern(pattArray);
     }
-
-
-    //definicion de patrones unicos y marcado/eliminacion de elementos repetidos
-    findUniquePattern(pattArray);
 
     std::cout << "Patrones base obtenidos de la imagen: " << pattArray.size() << std::endl;
     std::sort(pattArray.begin(), pattArray.end(), comparePatternMWFC);
-
-    //creacion de patrones espejo y rotaciones
-
-    makeMirroRotPattern(pattArray);
 
     for (int i = 0; i < pattArray.size(); i++) {
         pattArray[i].id = i;

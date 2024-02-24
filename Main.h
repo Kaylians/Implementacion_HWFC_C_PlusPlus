@@ -15,4 +15,6 @@ extern int inputImageHeight;
 extern int inputImageWidth;
 extern int pixelMaxValue;
 
+int getRandom(int min, int max);
+
 #endif 
