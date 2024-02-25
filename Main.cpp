@@ -3,8 +3,11 @@ si por ejemplo un pixel se ve siempre solo, nunca esta solo, quizas si es lineal
 valor que guarde cuantos pixeles de cada tipo tiene un patron, ver como usar esa informacion
 ver distancia entre patrones, quizas con el punto inicial de donde estaban en el mapa original
 */
-//siguiente tarea: recortar la cantidad de RPP que se usa, probablemente el High tiene todo el interior como RPP
-
+//siguiente tarea: 
+//recortar la cantidad de RPP que se usa, probablemente el High tiene todo el interior como RPP
+//aumentar la capacidad para hacer encajar los patrones, dar flexibilidad.
+//dar prioridad a encajar los patrones
+// 
 //link de reunion: https://reuna.zoom.us/my/nbarriga
 
 // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
@@ -17,7 +20,7 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 
 // ./Main --mode "WFC" --LP 2 3 --image "example2.ppm" --size 10
 
-// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 --image "example.ppm" --size 10
+// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 HP_i --image "example.ppm" --size 10
 
 // gdb ./Main
 // r (argumento)
@@ -619,7 +622,7 @@ int main(int argc, char* argv[]) {
         
     }
     ControlPoint(0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     //std::exit(0);
     int controlPointN = 0;
     while (!mapCompleted(unCollapseMap)) {

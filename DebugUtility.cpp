@@ -17,6 +17,7 @@ bool SearchRPP(std::vector<int> RPP, int target) {
 }
 //funciona para imprimir el mapa que son valores int
 void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi, std::vector<int>& RPP, bool MarkRPP) {
+    MarkRPP = true;
     for (int i = -1; i < size; i++) {
         if (i == -1) {
             std::cout << BLUE << " X" << " " << RESET << "|| ";
@@ -43,8 +44,8 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                         std::cout << BLUE << i << RESET << " || ";
                     }
                 }
-                else if (SearchRPP(RPP, i)) {
-                    std::cout << PURPLE << " " <<  "X" << " " << RESET << "|| ";
+                else if (SearchRPP(RPP, j + i * size) && MarkRPP) {
+                    std::cout << PURPLE << " " << "X" << " " << RESET << "|| ";
                 }
                 else if (unCollapseMap[j + i * size].size() == 1) {
                     if (unCollapseMap[j + i * size].front() < 10) {
