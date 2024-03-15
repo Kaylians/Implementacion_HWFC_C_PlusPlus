@@ -10,6 +10,7 @@
 #define BLUE    "\033[34m"
 #define WHITE    "\033[37m"
 #define PURPLE "\033[35m"
+#define CYAN "\033[36m"
 
 extern int inputImageHeight;
 extern int inputImageWidth;
