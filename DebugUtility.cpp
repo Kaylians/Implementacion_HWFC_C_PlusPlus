@@ -94,9 +94,8 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
     }
     std::cout << "---------------" << std::endl;
 }
-void printMapWithCollapseMark(const std::vector<std::vector<int>>& unCollapseMap, std::vector<int> lastCollapse,int size, int posibi, std::vector<int>& RPP, bool MarkRPP) {
-    MarkRPP = true;
-    bool collapseMark = false;
+void printMapWithCollapseMark(const std::vector<std::vector<int>>& unCollapseMap, std::vector<int> lastCollapse,int size, int posibi, std::vector<int>& RPP, bool MarkRPP, bool MarkCollapse) {
+    bool MarkCollapseTmp = false;
     for (int i = -1; i < size; i++) {
         if (i == -1) {
             std::cout << BLUE << " X" << " " << RESET << "|| ";
@@ -124,15 +123,16 @@ void printMapWithCollapseMark(const std::vector<std::vector<int>>& unCollapseMap
                 }
                 else if (unCollapseMap[j + i * size].size() == 1) {
 
-                    for (int h = 0; h < lastCollapse.size(); h++) {
-                        collapseMark = false;
-                        if (j + i * size == lastCollapse[h]) {
-                            collapseMark = true;
-                            break;
+                    if(MarkCollapse)
+                        for (int h = 0; h < lastCollapse.size(); h++) {
+                            MarkCollapseTmp = false;
+                            if (j + i * size == lastCollapse[h]) {
+                                MarkCollapseTmp = true;
+                                break;
+                            }
                         }
-                    }
                     if (unCollapseMap[j + i * size].front() < 10 && SearchRPP(RPP, j + i * size) && MarkRPP) {
-                        if (collapseMark)
+                        if (MarkCollapseTmp)
                             std::cout << CYAN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                         else if (unCollapseMap[j + i * size].front() == 0)
                             std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
@@ -146,7 +146,7 @@ void printMapWithCollapseMark(const std::vector<std::vector<int>>& unCollapseMap
                             std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                     }
                     else if (unCollapseMap[j + i * size].front() < 10) {
-                        if (collapseMark)
+                        if (MarkCollapseTmp)
                             std::cout << CYAN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                         else if (unCollapseMap[j + i * size].front() == 0)
                             std::cout << GREEN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";

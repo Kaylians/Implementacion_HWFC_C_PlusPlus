@@ -100,6 +100,21 @@ int getRandom(int min, int max) {
     rnd = std::rand() % max;
     return rnd;
 }
+//funcion para verificar si un vector contiene un valor int
+bool searchVectorInt(const std::vector<int>& vec, int value) {
+    auto iter = std::find(vec.begin(), vec.end(), value);
+    if (iter != vec.end()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+//funcion para detener la ejecucion
+void stopExecute(int times, std::string texto) {
+    ControlString(texto);
+    std::this_thread::sleep_for(std::chrono::milliseconds(times));
+}
 //funcion random para elegir el patron que más se repite
 int getRandomPatternWeighted(const std::vector<Pattern> pattern, int weightMultiplier) {
 
@@ -277,7 +292,6 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     //if (unCollapseMap[x].size() == 1)
     do {
         do {
-            //este no debe eliminar RPP en patrones medios o grandes, solo en patrones del menor grado posible
             if (usedPatterns.size() == pattern.size()) {
                 std::cout << RED << "!!!!!!!!!!!!!!!!!!!!!!!!! NO HAY SOLUCIONES DISPONIBLES PARA LA POSICION: " << pos << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
                 auto i = std::find(RPP.begin(), RPP.end(), pos);
@@ -357,7 +371,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
                     S = true;
                 }
             }
-            if (RPP[i] % Y > 1 && RPP[i] % Y < Y - 1) {
+            if (RPP[i] % Y >= 0 && RPP[i] % Y < Y) {
                 if (unCollapseMap[RPP[i] + 1].size() > 1) {
                     if (extendRPP)
                         tmpRPP.push_back(RPP[i] + 1);
@@ -365,7 +379,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
                     E = true;
                 }
             }
-            if (RPP[i] % Y < Y - 1 && RPP[i] % Y > 0) {
+            if (RPP[i] % Y < Y && RPP[i] % Y > 0) {
                 if (unCollapseMap[RPP[i] - 1].size() > 1) {
                     if (extendRPP)
                         tmpRPP.push_back(RPP[i] - 1);
@@ -530,7 +544,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (vm.count("MP")) {
-            std::cout << "Usar patrones de medianos de: ";
+            std::cout << "Usar patrones de media jerarquia: ";
             for (int val : HN) {
                 std::cout << val << " ";
             }
@@ -542,7 +556,7 @@ int main(int argc, char* argv[]) {
 
         if (vm.count("HP")) {
             std::cout << "Usar patrones de alta jerarquia: ";
-            for (int val : HN) {
+            for (int val : MN) {
                 std::cout << val << " ";
             }
             std::cout << std::endl;
@@ -552,11 +566,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (vm.count("HP_i")) {
-            std::cout << "iteraciones de alta jerarquia: ";
-            for (int val : HN) {
-                std::cout << val << " ";
-            }
-            std::cout << std::endl;
+            std::cout << "iteraciones de alta jerarquia: " << HN_i <<  std::endl;
         }
         else {
             std::cout << "Valores de patrones altos no ingresados." << std::endl;
@@ -619,34 +629,44 @@ int main(int argc, char* argv[]) {
     //DEFINICION DE LOS PATRONES
     if (mode == "WFC") {
         //Patrones de un unico tamaño
+        ControlString("Obtener patrones WFC");
         definePatternsWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
     }
     else{
         //Patrones de multiples tamaños
+        ControlString("Obtener patrones MWFC");
         definePatternsMWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N, false);
     }
     //EJECUCION DE JERARQUIA ALTA EN HWFC
     if (mode == "HWFC") {
         //patrones de multiples tamaños para uso medio
+        ControlString("Obtener patrones medios HWFC");
         definePatternsMWFC(patternArrayMid, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, MN, true);
         //patrones de multiples tamaños para uso alto
+        ControlString("Obtener patrones altos HWFC");
         definePatternsHWFC(patternArrayHigh, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+        stopExecute(2000, "patrones definidos...");
 
-        int HN_max = HN[0];
-        for (int i = 0; i < HN.size(); i++) {
-            if (HN_max < HN[i]) {
-                HN_max = HN[i];
-            }
-        }
         //colapso de patrones de alta jerarquia iniciales
+        int HN_max = 0;
+        for (int i = 0; i < HN.size(); i++)
+            if (HN_max < HN[i])
+                HN_max = HN[i];
+        //Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, 20, PosibleTiles.size(), false);
+        //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false);
+
         for (int i = 0; i < HN_i; i++) {
             //busqueda y posicionamiento de patrones de alta jerarquia
             do {
                 lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
             } while (!HPattValidTile(lowestEntropyTilePos, Y, Y, HN_max) && unCollapseMap[lowestEntropyTilePos].size() > 1);
-            if(Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false))
-            printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false);
+
+            if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false)) {
+                printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false, false);
+            }
+            else i--;
         }
+        stopExecute(2000, "patrones de media jerarquia...");
         bool condition = true;
         //colapso de patrones de tamaño mediano
         do {
@@ -654,9 +674,10 @@ int main(int argc, char* argv[]) {
             std::cout << YELLOW << "Posicion con la entropia más baja: " << lowestEntropyTilePos << RESET << std::endl;
             std::cout << GREEN << "COLAPSAR mediano" << RESET << std::endl;
             if(Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayMid, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false))
-                printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, true);
+                printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, true, false);
             ControlPoint(RPP.size());
         } while (RPP.size() > 1);  
+        
     }
     for (int i = 0; i < reserveRPP.size(); i++) {
         RPP.push_back(reserveRPP[i]);
@@ -688,10 +709,10 @@ int main(int argc, char* argv[]) {
         if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), true)) {
             printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
 
-            std::cout << " " << std::endl;
-            std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
-            propagate(unCollapseMap, RPP, patternArrayLow, lowestEntropyTilePos, Y);
-            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+            //std::cout << " " << std::endl;
+            //std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
+            //propagate(unCollapseMap, RPP, patternArrayLow, lowestEntropyTilePos, Y);
+            //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
 
             if (RPP.size() > 0) {
                 BT_cMap.push_back(unCollapseMap);
