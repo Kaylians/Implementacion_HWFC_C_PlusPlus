@@ -127,11 +127,11 @@ void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>
 
     for (int i = 0; i < pattArray.size(); i++) {
         pattArray[i].id = i;
-        std::cout << "conteo de patrones: patron " << pattArray[i].id << " se repite: " << pattArray[i].weight;
+        //std::cout << "conteo de patrones: patron " << pattArray[i].id << " se repite: " << pattArray[i].weight;
         if (pattArray[i].pattern) {
-            std::cout << "  es patron";
+            //std::cout << "  es patron";
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
 
     std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;

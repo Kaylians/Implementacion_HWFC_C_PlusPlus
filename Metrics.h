@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 
-void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, int N);
-
-
+int hammingMetric(const std::vector<Pixel>& Map1, const std::vector<Pixel>& Map2);
+int KL_Divergence(std::vector<Pattern>& PA1, std::vector<Pattern>& PA2);
 #endif 

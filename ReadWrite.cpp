@@ -1,6 +1,7 @@
 #include "ReadWrite.h"
 #include "Pixel.h"
 #include "Pattern.h"
+namespace fs = std::filesystem;
 
 //funcion para la lectura de la imagen de ejemplo
 bool readImagePPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles) {
@@ -51,6 +52,7 @@ void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vect
 //creación de una imagen con un mosaico de los patrones
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y) {
     int lenght = pattern.front().N;
+   
     int wAmount = lenght * 10 + 10;
 
     Pixel pixelNegro = { 0,0,0 };
@@ -85,3 +87,74 @@ void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& 
 
 
 }
+//creación de carpeta con los resultados
+bool crearCarpeta(const std::string& ruta) {
+    try {
+        if (!fs::exists(ruta)) {
+            return fs::create_directory(ruta);
+        }
+        return true; // La carpeta ya existe
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error al crear la carpeta: " << e.what() << std::endl;
+        return false;
+    }
+}
+std::string obtenerNombreUnico(const std::string& carpeta, const std::string& nombreBase) {
+    std::string nombre = nombreBase + "_" + "0" + ".ppm";;
+    int contador = 1;
+    if (!fs::exists(carpeta + "/" + nombre)) {
+        return nombre;
+    }
+    else {
+        while (fs::exists(carpeta + "/" + nombre)) {
+            std::ostringstream oss;
+            oss << contador;
+            nombre = nombreBase + "_" + oss.str() + ".ppm";
+            contador++;
+        }
+    }
+
+    return nombre;
+}
+bool guardarArchivoPPM(const std::string& carpetaBase, const std::string& modoTamano, int ancho, int alto, const std::vector<Pixel>& pixels) {
+    std::string carpeta = "generatedLevels/"+carpetaBase;
+    if (!crearCarpeta(carpeta)) {
+        return false;
+    }
+
+    // Obtener un nombre único para el archivo .ppm
+    std::string nombreBase = "Map";
+    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase);
+
+    // Ruta completa del archivo .ppm
+    std::string rutaArchivo = carpeta + "/" + nombreUnico;
+
+    // Escribir los datos en el archivo .ppm
+    std::ofstream archivo(rutaArchivo, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo para escritura: " << rutaArchivo << std::endl;
+        return false;
+    }
+
+    archivo << "P6\n" << ancho << " " << alto << "\n255\n";
+    archivo.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(Pixel));
+
+    // Verificar si ocurrieron errores durante la escritura
+    if (archivo.bad()) {
+        std::cerr << "Error al escribir en el archivo: " << rutaArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    std::cout << "Archivo guardado correctamente en: " << rutaArchivo << std::endl;
+    return true;
+
+}
+void SaveInfoPPM(std::vector<Pixel>& data, const std::string mode,const int size) {
+    std::string folder = mode + "_size_" + std::to_string(size) + "_";
+    std::string format = ".ppm";
+    guardarArchivoPPM(folder, format, size, size, data);
+}
+
