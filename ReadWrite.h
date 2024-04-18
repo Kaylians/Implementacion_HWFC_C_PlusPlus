@@ -12,6 +12,7 @@
 
 #include "Pixel.h"
 #include "Pattern.h"
+#include "DebugUtility.h"
 
 namespace fs = std::filesystem;
 
@@ -27,8 +28,6 @@ void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vect
 //funcion para reconstruir una imagen a partir del mapa generado
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y);
 
-std::string getNewImageName(const std::string& folder, const std::string& subfolder, const std::string& name);
-
-void SaveInfoPPM(std::vector<Pixel>& pixeles, const std::string mode, const int size);
+void SaveInfoPPM(const std::vector<Pixel>& pixeles, const std::vector<Pattern>& usedPattern, const std::string mode, const int size);
 
 #endif 

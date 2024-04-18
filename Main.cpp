@@ -660,6 +660,7 @@ int main(int argc, char* argv[]) {
         ControlString("Obtener patrones altos HWFC");
         definePatternsHWFC(patternArrayHigh, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
     }
+    infoPatternUpdateID(patternArrayBase,patternArrayLow,patternArrayMid,patternArrayHigh);
     do {
         //EJECUCION DE JERARQUIA ALTA EN HWFC
         if (mode == "HWFC") {
@@ -825,12 +826,7 @@ int main(int argc, char* argv[]) {
         std::cout << "usos del backtracking: " << backtrackUses << std::endl;
         //definicion de metricas
         //KL Divergence
-        patternArrayBase.reserve(patternArrayLow.size() + patternArrayMid.size() + patternArrayHigh.size());
-        patternArrayBase.insert(patternArrayBase.end(), patternArrayLow.begin(), patternArrayLow.end());
-        if (patternArrayMid.size() > 0)
-            patternArrayBase.insert(patternArrayBase.end(), patternArrayMid.begin(), patternArrayMid.end());
-        if (patternArrayHigh.size() > 0)
-            patternArrayBase.insert(patternArrayBase.end(), patternArrayHigh.begin(), patternArrayHigh.end());
+        
         //construccion de una nueva imagen
         reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
         std::cout << "Mapa reconstruido exitosamente." << std::endl;
@@ -839,12 +835,30 @@ int main(int argc, char* argv[]) {
 
         // Metodo tamaño (numero de generacion)
 
-        SaveInfoPPM(pixelVectorSalida, mode, Y);
+        findUniquePattern(usedPatternArray);
+        for (int i = 0; i < usedPatternArray.size(); i++) {
+            std::cout << usedPatternArray[i].id << " ";
+            std::cout << usedPatternArray[i].N << " ";
+            std::cout << usedPatternArray[i].weight << " ";
+            std::cout << "/";
+            for (int j = 0; j < usedPatternArray[i].pixelesCoo.size(); j++) {
+                std::cout << usedPatternArray[i].pixelesCoo[j] << " ";
+            }
+            std::cout << std::endl;
+        }
+        size_t dotPos = exampleMap.find('.');
+        std::string nameWithoutExt = "";
+        if (dotPos != std::string::npos) {
+            // Extraer la parte del nombre de archivo antes del punto
+            nameWithoutExt = exampleMap.substr(0, dotPos);
+        }
+        SaveInfoPPM(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y);
 
         //dibujar los patrones en una imagen aparte
         initializePosMap(unCollapseMap, PosibleTiles, Y);
         serial_it++;
         pixelVectorSalida.clear();
+        usedPatternArray.clear();
         RPP.clear();
         BT_pos.clear();
         BT_cMap.clear();

@@ -17,6 +17,7 @@ public:
     std::vector<int> pixelesCoo;
     std::vector<int> coordinate;
 
+    Pattern() : id(0) {}
     // Constructor
     Pattern(int id, int N);
 
@@ -29,6 +30,6 @@ public:
     std::vector<int> mirrorPatternCoo(const std::vector<int>& Pattern);
     void addPixelVector(std::vector<Pixel> newPixeles);
     void addPixelCooVector(std::vector<int> newPixeles);
+    
 };
-
 #endif 

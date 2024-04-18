@@ -6,7 +6,6 @@
     bool Pattern::comparePixelPattern(const std::vector<Pixel>& otherPixeles) {
 
         if (otherPixeles.size() != pixeles.size()) {
-            std::cout << "Error, tamaño de tiles no compatible 1" << std::endl;
             return false;
         }
 

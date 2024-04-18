@@ -100,8 +100,8 @@ bool crearCarpeta(const std::string& ruta) {
         return false;
     }
 }
-std::string obtenerNombreUnico(const std::string& carpeta, const std::string& nombreBase) {
-    std::string nombre = nombreBase + "_" + "0" + ".ppm";;
+std::string obtenerNombreUnico(const std::string& carpeta, const std::string& nombreBase, const std::string& fileType) {
+    std::string nombre = nombreBase + "_" + "0" + fileType;
     int contador = 1;
     if (!fs::exists(carpeta + "/" + nombre)) {
         return nombre;
@@ -110,22 +110,23 @@ std::string obtenerNombreUnico(const std::string& carpeta, const std::string& no
         while (fs::exists(carpeta + "/" + nombre)) {
             std::ostringstream oss;
             oss << contador;
-            nombre = nombreBase + "_" + oss.str() + ".ppm";
+            nombre = nombreBase + "_" + oss.str() + fileType;
             contador++;
         }
     }
 
     return nombre;
 }
-bool guardarArchivoPPM(const std::string& carpetaBase, const std::string& modoTamano, int ancho, int alto, const std::vector<Pixel>& pixels) {
+bool SaveMapFile(const std::string& carpetaBase, const std::string& modoTamano, int ancho, int alto, const std::vector<Pixel>& pixels) {
     std::string carpeta = "generatedLevels/"+carpetaBase;
+
     if (!crearCarpeta(carpeta)) {
         return false;
     }
 
     // Obtener un nombre único para el archivo .ppm
     std::string nombreBase = "Map";
-    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase);
+    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, modoTamano);
 
     // Ruta completa del archivo .ppm
     std::string rutaArchivo = carpeta + "/" + nombreUnico;
@@ -152,9 +153,83 @@ bool guardarArchivoPPM(const std::string& carpetaBase, const std::string& modoTa
     return true;
 
 }
-void SaveInfoPPM(std::vector<Pixel>& data, const std::string mode,const int size) {
-    std::string folder = mode + "_size_" + std::to_string(size) + "_";
-    std::string format = ".ppm";
-    guardarArchivoPPM(folder, format, size, size, data);
+bool SavePatternInfoFile(const std::string& carpetaBase, const std::string& modoTamano, const std::vector<Pattern>& vec, std::string& name) {
+    std::string carpeta = "generatedLevels/" + carpetaBase;
+
+    if (!crearCarpeta(carpeta)) {
+        return false;
+    }
+
+    // Obtener un nombre único para el archivo .ppm
+    std::string nombreBase = "Map";
+    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, modoTamano);
+    name = nombreUnico;
+    // Ruta completa del archivo .ppm
+    std::string rutaArchivo = carpeta + "/" + nombreUnico;
+
+    // Escribir los datos en el archivo .ppm
+    std::ofstream archivo(rutaArchivo, std::ios::binary);
+    
+    if (archivo.is_open()) {
+        for (const Pattern& pat : vec) {
+            archivo << pat.id << " ";
+            archivo << pat.N << " ";
+            archivo << pat.weight << " ";
+            for (const Pixel& px : pat.pixeles) {
+                archivo << px.R << " " << px.G << " " << px.B << " ";
+            }
+            archivo << std::endl;
+        }
+        archivo.close();
+    }
+
+    return true;
+}
+std::vector<Pattern> cargarVectorDesdeArchivo(const std::string& carpetaBase, const std::string format) {
+    std::string carpeta = "generatedLevels/" + carpetaBase;
+
+    if (!crearCarpeta(carpeta)) {
+        ControlString("carpeta no existe");
+    }
+    std::string rutaArchivo = carpeta + "/" + format;
+    std::vector<Pattern> vec;
+    std::cerr << "la ruta del archivo es: " << rutaArchivo << std::endl;
+    std::ifstream archivo(rutaArchivo);
+    if (archivo.is_open()) {
+        std::string linea;
+        while (std::getline(archivo, linea)) {
+            std::istringstream iss(linea);
+            Pattern pat;
+            if (iss >> pat.id) {
+                iss >> pat.N;
+                iss >> pat.weight;
+                Pixel px;
+                while (iss >> px.R >> px.G >> px.B) {
+                    pat.pixeles.push_back(px);
+                }
+                
+                vec.push_back(pat);
+            }
+        }
+        archivo.close();
+        std::cout << "Vector cargado desde archivo de texto: " << rutaArchivo << std::endl;
+    }
+    else {
+        std::cerr << "Error al abrir el archivo en txt: " << rutaArchivo << std::endl;
+    }
+    return vec;
+}
+void SaveInfoPPM(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size) {
+    std::string folder = mode +"_size_" + std::to_string(size);
+    std::string fileName;
+    SaveMapFile(folder, ".ppm", size, size, data);
+    if (SavePatternInfoFile(folder, ".txt", dataPattern, fileName)) {
+        std::vector<Pattern> patternsCargados = cargarVectorDesdeArchivo(folder, fileName);
+        // Imprimir los datos cargados (solo como ejemplo)
+        std::cout << "Datos cargados desde el archivo:" << std::endl;
+        for (const Pattern& pat : patternsCargados) {
+            std::cout << "ID: " << pat.id << ", size: "<< pat.N << ", peso: " << pat.weight << std::endl;
+        }
+    }
 }
 

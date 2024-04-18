@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <unordered_set>
 
 //funcion para ver si dos patrones son iguales
 bool comparePatternWFC(const Pattern& a, const Pattern& b) {
@@ -15,10 +16,9 @@ bool comparePatternWFC(const Pattern& a, const Pattern& b) {
 
 void findUniquePattern(std::vector<Pattern>& pattArray) {
     std::vector<Pattern> tmpPattArray;
-    int weight = 0;
+    int weight = 1;
     for (int i = 0; i < pattArray.size(); i++) {
         if (pattArray[i].pattern) {
-            weight++;
             for (int j = i + 1; j < pattArray.size(); j++) {
                 if (pattArray[j].N == pattArray[i].N) {
                     if (pattArray[j].pattern && pattArray[i].comparePixelPattern(pattArray[j].pixeles)) {
@@ -29,11 +29,12 @@ void findUniquePattern(std::vector<Pattern>& pattArray) {
             }
             pattArray[i].weight = weight;
         }
-        weight = 0;
+        weight = 1;
     }
     for (int i = 0; i < pattArray.size(); i++)
         if (pattArray[i].pattern) {
             tmpPattArray.push_back(pattArray[i]);
+            tmpPattArray[tmpPattArray.size() - 1].id = tmpPattArray.size() - 1;
         }
     pattArray.clear();
     pattArray = tmpPattArray;
@@ -136,3 +137,34 @@ void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>
 
     std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
 }//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
+void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow, std::vector<Pattern>& pMid, std::vector<Pattern>& pHigh) {
+    pBase.reserve(pLow.size() + pMid.size() + pHigh.size());
+    pBase.insert(pBase.end(), pLow.begin(), pLow.end());
+    if (pMid.size() > 0)
+        pBase.insert(pBase.end(), pMid.begin(), pMid.end());
+    if (pHigh.size() > 0)
+        pBase.insert(pBase.end(), pHigh.begin(), pHigh.end());
+    findUniquePattern(pBase);
+
+    for (int i = 0; i < pHigh.size(); i++) {
+        for (int j = 0; j < pBase.size(); j++) {
+            if (pHigh[i].comparePixelPattern(pBase[j].pixeles)) {
+                pHigh[i].id = pBase[j].id;
+            }
+        }
+    }
+    for (int i = 0; i < pMid.size(); i++) {
+        for (int j = 0; j < pBase.size(); j++) {
+            if (pMid[i].comparePixelPattern(pBase[j].pixeles)) {
+                pMid[i].id = pBase[j].id;
+            }
+        }
+    }
+    for (int i = 0; i < pLow.size(); i++) {
+        for (int j = 0; j < pBase.size(); j++) {
+            if (pLow[i].comparePixelPattern(pBase[j].pixeles)) {
+                pLow[i].id = pBase[j].id;
+            }
+        }
+    }
+}
