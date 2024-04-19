@@ -10,6 +10,9 @@
 #include <vector>
 #include <filesystem>
 
+#include <algorithm>
+#include <unordered_set>
+
 #include "Pixel.h"
 #include "Pattern.h"
 #include "DebugUtility.h"
@@ -28,6 +31,8 @@ void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vect
 //funcion para reconstruir una imagen a partir del mapa generado
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y);
 
-void SaveInfoPPM(const std::vector<Pixel>& pixeles, const std::vector<Pattern>& usedPattern, const std::string mode, const int size);
+void SaveInfoOnFile(const std::vector<Pixel>& pixeles, const std::vector<Pattern>& usedPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles);
+
+std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, const std::string& nombreBase, const std::string& fileType);
 
 #endif 

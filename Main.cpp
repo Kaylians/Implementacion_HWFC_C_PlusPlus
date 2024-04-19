@@ -621,7 +621,7 @@ int main(int argc, char* argv[]) {
 
     //lectura de la imagen de entrada
     if (readImagePPM(exampleMap, inputImageWidth, inputImageHeight, pixelVector)) {
-        std::cout << "Imagen PPM le�da exitosamente." << std::endl;
+        std::cout << "Imagen PPM leida exitosamente." << std::endl;
     }
     //inicio de cronometro
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -727,7 +727,7 @@ int main(int argc, char* argv[]) {
 
             //std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
             if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), true)) {
-                //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+               //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
 
                 //std::cout << " " << std::endl;
                 //std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
@@ -836,23 +836,13 @@ int main(int argc, char* argv[]) {
         // Metodo tamaño (numero de generacion)
 
         findUniquePattern(usedPatternArray);
-        for (int i = 0; i < usedPatternArray.size(); i++) {
-            std::cout << usedPatternArray[i].id << " ";
-            std::cout << usedPatternArray[i].N << " ";
-            std::cout << usedPatternArray[i].weight << " ";
-            std::cout << "/";
-            for (int j = 0; j < usedPatternArray[i].pixelesCoo.size(); j++) {
-                std::cout << usedPatternArray[i].pixelesCoo[j] << " ";
-            }
-            std::cout << std::endl;
-        }
         size_t dotPos = exampleMap.find('.');
         std::string nameWithoutExt = "";
         if (dotPos != std::string::npos) {
             // Extraer la parte del nombre de archivo antes del punto
             nameWithoutExt = exampleMap.substr(0, dotPos);
         }
-        SaveInfoPPM(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y);
+        SaveInfoOnFile(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles);
 
         //dibujar los patrones en una imagen aparte
         initializePosMap(unCollapseMap, PosibleTiles, Y);

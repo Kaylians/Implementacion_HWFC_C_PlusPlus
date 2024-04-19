@@ -117,7 +117,17 @@ std::string obtenerNombreUnico(const std::string& carpeta, const std::string& no
 
     return nombre;
 }
-bool SaveMapFile(const std::string& carpetaBase, const std::string& modoTamano, int ancho, int alto, const std::vector<Pixel>& pixels) {
+std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, const std::string& nombreBase, const std::string& fileType) {
+    std::string nombre = nombreBase;
+    std::vector<std::string> filesName;
+    int contador = 0;
+    while (fs::exists(carpeta + "/" + nombre + "_" + std::to_string(contador) + fileType)) {
+        filesName.push_back(nombre + "_" + std::to_string(contador) + fileType);
+        contador++;
+    }
+    return filesName;
+}
+bool SaveMapFile(const std::string& carpetaBase, const std::string& formato, int ancho, int alto, const std::vector<Pixel>& pixels) {
     std::string carpeta = "generatedLevels/"+carpetaBase;
 
     if (!crearCarpeta(carpeta)) {
@@ -126,7 +136,7 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string& modoTamano, 
 
     // Obtener un nombre único para el archivo .ppm
     std::string nombreBase = "Map";
-    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, modoTamano);
+    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, formato);
 
     // Ruta completa del archivo .ppm
     std::string rutaArchivo = carpeta + "/" + nombreUnico;
@@ -153,39 +163,34 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string& modoTamano, 
     return true;
 
 }
-bool SavePatternInfoFile(const std::string& carpetaBase, const std::string& modoTamano, const std::vector<Pattern>& vec, std::string& name) {
+bool SavePatternInfoFile(const std::string& carpetaBase, const std::string& formato, const std::vector<Pattern>& vec, std::string& name) {
     std::string carpeta = "generatedLevels/" + carpetaBase;
 
     if (!crearCarpeta(carpeta)) {
         return false;
     }
 
-    // Obtener un nombre único para el archivo .ppm
     std::string nombreBase = "Map";
-    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, modoTamano);
+    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, formato);
     name = nombreUnico;
-    // Ruta completa del archivo .ppm
     std::string rutaArchivo = carpeta + "/" + nombreUnico;
-
-    // Escribir los datos en el archivo .ppm
     std::ofstream archivo(rutaArchivo, std::ios::binary);
     
     if (archivo.is_open()) {
         for (const Pattern& pat : vec) {
-            archivo << pat.id << " ";
-            archivo << pat.N << " ";
-            archivo << pat.weight << " ";
-            for (const Pixel& px : pat.pixeles) {
-                archivo << px.R << " " << px.G << " " << px.B << " ";
+            archivo << pat.N << ";";
+            archivo << pat.weight << ";";
+            for (int i = 0; i < pat.pixelesCoo.size(); i++) {
+                archivo << pat.pixelesCoo[i] << ";";
             }
-            archivo << std::endl;
+            archivo << "\n";
         }
         archivo.close();
     }
 
     return true;
 }
-std::vector<Pattern> cargarVectorDesdeArchivo(const std::string& carpetaBase, const std::string format) {
+std::vector<Pattern> cargarVectorDesdeArchivoCSV(const std::string& carpetaBase, const std::string format, char delimiter = ';') {
     std::string carpeta = "generatedLevels/" + carpetaBase;
 
     if (!crearCarpeta(carpeta)) {
@@ -198,18 +203,27 @@ std::vector<Pattern> cargarVectorDesdeArchivo(const std::string& carpetaBase, co
     if (archivo.is_open()) {
         std::string linea;
         while (std::getline(archivo, linea)) {
+            Pattern pat (0,0);
             std::istringstream iss(linea);
-            Pattern pat;
-            if (iss >> pat.id) {
-                iss >> pat.N;
-                iss >> pat.weight;
-                Pixel px;
-                while (iss >> px.R >> px.G >> px.B) {
-                    pat.pixeles.push_back(px);
-                }
-                
-                vec.push_back(pat);
+            std::string token;
+
+            // Leer N
+            if (std::getline(iss, token, delimiter)) {
+                pat.N = std::stoi(token);
             }
+
+            // Leer weight
+            if (std::getline(iss, token, delimiter)) {
+                pat.weight = std::stoi(token);
+            }
+
+            // Leer pixelesCoo
+            while (std::getline(iss, token, delimiter)) {
+                pat.pixelesCoo.push_back(std::stoi(token));
+            }
+
+            vec.push_back(pat);
+            
         }
         archivo.close();
         std::cout << "Vector cargado desde archivo de texto: " << rutaArchivo << std::endl;
@@ -219,17 +233,15 @@ std::vector<Pattern> cargarVectorDesdeArchivo(const std::string& carpetaBase, co
     }
     return vec;
 }
-void SaveInfoPPM(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size) {
+void SaveInfoOnFile(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size, const std::vector<Pixel>& posibleTiles) {
     std::string folder = mode +"_size_" + std::to_string(size);
     std::string fileName;
-    SaveMapFile(folder, ".ppm", size, size, data);
-    if (SavePatternInfoFile(folder, ".txt", dataPattern, fileName)) {
-        std::vector<Pattern> patternsCargados = cargarVectorDesdeArchivo(folder, fileName);
-        // Imprimir los datos cargados (solo como ejemplo)
-        std::cout << "Datos cargados desde el archivo:" << std::endl;
-        for (const Pattern& pat : patternsCargados) {
-            std::cout << "ID: " << pat.id << ", size: "<< pat.N << ", peso: " << pat.weight << std::endl;
-        }
-    }
-}
 
+    SaveMapFile(folder, ".ppm", size, size, data);
+    SavePatternInfoFile(folder, ".csv", dataPattern, fileName);
+    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos("generatedLevels/"+folder,"Map", ".csv");
+    for (int i = 0; i < SaveCSVNames.size(); i++) {
+        ControlString(SaveCSVNames[i]);
+    }
+    std::vector<Pattern> patternsCargados = cargarVectorDesdeArchivoCSV(folder, fileName);
+}
