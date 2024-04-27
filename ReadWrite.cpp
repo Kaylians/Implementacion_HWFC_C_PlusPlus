@@ -243,5 +243,24 @@ void SaveInfoOnFile(const std::vector<Pixel>& data, const std::vector<Pattern>& 
     for (int i = 0; i < SaveCSVNames.size(); i++) {
         ControlString(SaveCSVNames[i]);
     }
-    std::vector<Pattern> patternsCargados = cargarVectorDesdeArchivoCSV(folder, fileName);
+    std::vector<Pattern> nombreArchivosCargados = cargarVectorDesdeArchivoCSV(folder, fileName);
+
+    for (int i = 0; i < nombreArchivosCargados.size(); i++) {
+        //llamar a las metricas por cada uno.
+        //crear o verificar si existe el documento
+        // metrics_KLD / metrics_Hamming
+        //division del documento
+        //std::cout << nombreArchivosCargados[i].pixelesCoo;
+        std::vector<std::vector<int>> resultados;
+        /*
+        _____/map_0/map_1/map_2/map_3/.....
+        map_0/ 0 / x_0_1
+        map_1/
+        map_2/
+        map_3/
+        .
+        .
+        .
+        */
+    }
 }

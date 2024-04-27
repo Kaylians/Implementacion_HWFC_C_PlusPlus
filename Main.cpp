@@ -26,13 +26,13 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 // 
 
 // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
-//       cd /mnt/d/Memoria\ HWFC/HWFC-master/
 
 
 
 // g++ -g -Wall -Wextra -o WFC WFC.cpp
 
 //medir tiempo
+
 // g++ -O3 Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
 
 // Ejecuci�n: 
@@ -91,6 +91,7 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 #include "HWFC.h"
 #include "ReadWrite.h"
 #include "DebugUtility.h"
+#include "Metrics.h"
 #include <thread>
 
 #include <boost/program_options.hpp>
@@ -856,6 +857,9 @@ int main(int argc, char* argv[]) {
         
 
     }while (serial_it_max > serial_it);
+
+    PerformMetrics();
+    
 
     createPatternDraw(patternArrayLow, patterVectorSalida, Y);
     if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
