@@ -9,7 +9,6 @@
 #include <string>
 
 int hammingMetric(const std::vector<Pixel>& Map1, const std::vector<Pixel>& Map2);
-int KL_Divergence(std::vector<Pattern>& PA1, std::vector<Pattern>& PA2);
-void PerformMetrics();
+double KL_Divergence(std::vector<Pattern> P, std::vector<Pattern> Q);
 
 #endif 

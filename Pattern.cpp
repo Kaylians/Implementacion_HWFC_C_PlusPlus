@@ -14,7 +14,6 @@
     bool Pattern::compareCooPattern(const std::vector<int>& otherPixeles) {
 
         if (otherPixeles.size() != pixelesCoo.size()) {
-            std::cout << "Error, tamaño de tiles no compatible 2" << std::endl;
             return false;
         }
 

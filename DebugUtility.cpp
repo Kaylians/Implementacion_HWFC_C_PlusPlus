@@ -192,3 +192,9 @@ void ControlPointNoText(int i) {
 void ControlString(std::string text) {
     std::cout << YELLOW << text << RESET << std::endl;
 }
+void PrintPixelCoo(Pattern patt) {
+    for (int element : patt.pixelesCoo) {
+        std::cout << element;
+    }
+    std::cout << std::endl;
+}

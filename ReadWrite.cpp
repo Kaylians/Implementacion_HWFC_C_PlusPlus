@@ -1,6 +1,7 @@
 #include "ReadWrite.h"
 #include "Pixel.h"
 #include "Pattern.h"
+#include "Metrics.h"
 namespace fs = std::filesystem;
 
 //funcion para la lectura de la imagen de ejemplo
@@ -237,30 +238,20 @@ void SaveInfoOnFile(const std::vector<Pixel>& data, const std::vector<Pattern>& 
     std::string folder = mode +"_size_" + std::to_string(size);
     std::string fileName;
 
+    //guardado del mapa actual de la ejecución
     SaveMapFile(folder, ".ppm", size, size, data);
     SavePatternInfoFile(folder, ".csv", dataPattern, fileName);
+
     std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos("generatedLevels/"+folder,"Map", ".csv");
     for (int i = 0; i < SaveCSVNames.size(); i++) {
-        ControlString(SaveCSVNames[i]);
-    }
-    std::vector<Pattern> nombreArchivosCargados = cargarVectorDesdeArchivoCSV(folder, fileName);
+        std::cout << SaveCSVNames[i] << "---" << fileName << std::endl;
+        if (SaveCSVNames[i] != fileName) {
+            std::vector<Pattern> LoadedFile = cargarVectorDesdeArchivoCSV(folder, SaveCSVNames[i]); 
+            double result = KL_Divergence(dataPattern, LoadedFile);
 
-    for (int i = 0; i < nombreArchivosCargados.size(); i++) {
-        //llamar a las metricas por cada uno.
-        //crear o verificar si existe el documento
-        // metrics_KLD / metrics_Hamming
-        //division del documento
-        //std::cout << nombreArchivosCargados[i].pixelesCoo;
-        std::vector<std::vector<int>> resultados;
-        /*
-        _____/map_0/map_1/map_2/map_3/.....
-        map_0/ 0 / x_0_1
-        map_1/
-        map_2/
-        map_3/
-        .
-        .
-        .
-        */
+            std::cout << "El valor de KLD de : " << SaveCSVNames[i] << "---" << fileName << ", ES: "<< result << std::endl;
+        }
     }
+    
+    //PerformMetrics(ArchivosCargados);
 }

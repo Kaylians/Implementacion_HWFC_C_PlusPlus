@@ -13,7 +13,7 @@ void printMapWithCollapseMark(const std::vector<std::vector<int>>& unCollapseMap
 void ControlPoint(int i);
 void ControlPointNoText(int i);
 void ControlString(std::string text);
-
+void PrintPixelCoo(Pattern patt);
 #endif 
 
 

@@ -816,38 +816,40 @@ int main(int argc, char* argv[]) {
         }
 
 
+        if (mapCompleted(unCollapseMap)) {
+            std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
+            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+            //fin del cronometro del tiempo de ejecucion
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+            std::cout << "Tiempo de ejecucion: " << duration << " ms" << std::endl;
+            std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
+            std::cout << "usos del backtracking: " << backtrackUses << std::endl;
+            //definicion de metricas
+            //KL Divergence
 
-        std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
-        printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
-        //fin del cronometro del tiempo de ejecucion
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        std::cout << "Tiempo de ejecucion: " << duration << " ms" << std::endl;
-        std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
-        std::cout << "usos del backtracking: " << backtrackUses << std::endl;
-        //definicion de metricas
-        //KL Divergence
-        
-        //construccion de una nueva imagen
-        reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
-        std::cout << "Mapa reconstruido exitosamente." << std::endl;
+            //construccion de una nueva imagen
+            reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
+            std::cout << "Mapa reconstruido exitosamente." << std::endl;
 
-        //guardado de la imagen en un nuevo archivo
+            //guardado de la imagen en un nuevo archivo
 
-        // Metodo tamaño (numero de generacion)
+            // Metodo tamaño (numero de generacion)
 
-        findUniquePattern(usedPatternArray);
-        size_t dotPos = exampleMap.find('.');
-        std::string nameWithoutExt = "";
-        if (dotPos != std::string::npos) {
-            // Extraer la parte del nombre de archivo antes del punto
-            nameWithoutExt = exampleMap.substr(0, dotPos);
+            findUniquePattern(usedPatternArray);
+            size_t dotPos = exampleMap.find('.');
+            std::string nameWithoutExt = "";
+            if (dotPos != std::string::npos) {
+                // Extraer la parte del nombre de archivo antes del punto
+                nameWithoutExt = exampleMap.substr(0, dotPos);
+            }
+            SaveInfoOnFile(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles);
+
+            //dibujar los patrones en una imagen aparte
+            initializePosMap(unCollapseMap, PosibleTiles, Y);
+            serial_it++;
         }
-        SaveInfoOnFile(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles);
-
-        //dibujar los patrones en una imagen aparte
-        initializePosMap(unCollapseMap, PosibleTiles, Y);
-        serial_it++;
+        
         pixelVectorSalida.clear();
         usedPatternArray.clear();
         RPP.clear();
@@ -858,7 +860,7 @@ int main(int argc, char* argv[]) {
 
     }while (serial_it_max > serial_it);
 
-    PerformMetrics();
+
     
 
     createPatternDraw(patternArrayLow, patterVectorSalida, Y);
