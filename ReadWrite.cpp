@@ -2,13 +2,40 @@
 #include "Pixel.h"
 #include "Pattern.h"
 #include "Metrics.h"
+#include "DebugUtility.h"
 namespace fs = std::filesystem;
 
-//funcion para la lectura de la imagen de ejemplo
-bool readImagePPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles) {
-    std::ifstream archivo(r, std::ios::binary);
+std::vector<Pixel> simpleHammingPPM(const std::string& exampleName) {
+    std::vector<Pixel> pixeles;
+    int w, h;
+    std::ifstream archivo(exampleName, std::ios::binary);
     if (!archivo.is_open()) {
-        std::cerr << "Error al abrir el archivo: " << r << std::endl;
+        std::cerr << "Error al abrir el archivo en Hamming: " << exampleName << std::endl;
+    }
+
+    std::string encabezado;
+    archivo >> encabezado;
+
+    if (encabezado != "P6") {
+        std::cerr << "Formato de archivo PPM no válido en Hamming." << std::endl;
+    }
+
+    archivo >> w >> h;
+    int maxValor;
+    archivo >> maxValor;
+
+    archivo.ignore(); // Ignorar el espacio en blanco después del valor máximo
+
+    pixeles.resize(w * h);
+    archivo.read(reinterpret_cast<char*>(pixeles.data()), pixeles.size() * sizeof(Pixel));
+
+    return pixeles;
+}
+//funcion para la lectura de la imagen de ejemplo
+bool readImagePPM(const std::string& exampleName, int& w, int& h, std::vector<Pixel>& pixeles) {
+    std::ifstream archivo(exampleName, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << exampleName << std::endl;
         return false;
     }
 
@@ -128,7 +155,7 @@ std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, cons
     }
     return filesName;
 }
-bool SaveMapFile(const std::string& carpetaBase, const std::string& formato, int ancho, int alto, const std::vector<Pixel>& pixels) {
+bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, int ancho, int alto, const std::vector<Pixel>& pixels) {
     std::string carpeta = "generatedLevels/"+carpetaBase;
 
     if (!crearCarpeta(carpeta)) {
@@ -136,11 +163,10 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string& formato, int
     }
 
     // Obtener un nombre único para el archivo .ppm
-    std::string nombreBase = "Map";
-    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, formato);
+
 
     // Ruta completa del archivo .ppm
-    std::string rutaArchivo = carpeta + "/" + nombreUnico;
+    std::string rutaArchivo = carpeta + "/" + nombreBase;
 
     // Escribir los datos en el archivo .ppm
     std::ofstream archivo(rutaArchivo, std::ios::binary);
@@ -234,22 +260,37 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const std::string& carpetaBase,
     }
     return vec;
 }
-void SaveInfoOnFile(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size, const std::vector<Pixel>& posibleTiles) {
+void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size, const std::vector<Pixel>& posibleTiles) {
     std::string folder = mode +"_size_" + std::to_string(size);
     std::string fileName;
 
+
+    std::string nombreUnico = obtenerNombreUnico("generatedLevels/" + folder, "Map", ".ppm");
+
     //guardado del mapa actual de la ejecución
-    SaveMapFile(folder, ".ppm", size, size, data);
+    SaveMapFile(folder,nombreUnico, size, size, data);
     SavePatternInfoFile(folder, ".csv", dataPattern, fileName);
 
-    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos("generatedLevels/"+folder,"Map", ".csv");
+    //realizar hamming
+    std::vector<std::string> SavePPMNames = ObtenerNombresArchivos("generatedLevels/" + folder, "Map", ".ppm");
+
+
+    std::vector<Pixel> Map1 = simpleHammingPPM("generatedLevels/" + folder +"/" + nombreUnico);
+    for (int i = 0; i < SavePPMNames.size(); i++) {
+        std::vector<Pixel> Map2 = simpleHammingPPM("generatedLevels/" + folder + "/" + SavePPMNames[i]);
+        int similarity = hammingMetric(Map1, Map2);
+        ControlPoint(similarity);
+    }
+
+    //realizar KLD
+    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos("generatedLevels/" + folder, "Map", ".csv");
     for (int i = 0; i < SaveCSVNames.size(); i++) {
-        std::cout << SaveCSVNames[i] << "---" << fileName << std::endl;
         if (SaveCSVNames[i] != fileName) {
             std::vector<Pattern> LoadedFile = cargarVectorDesdeArchivoCSV(folder, SaveCSVNames[i]); 
             double result = KL_Divergence(dataPattern, LoadedFile);
 
-            std::cout << "El valor de KLD de : " << SaveCSVNames[i] << "---" << fileName << ", ES: "<< result << std::endl;
+            std::cout << "El valor de KLD de : " << fileName << "---" << SaveCSVNames[i] << ", es: " << result << std::endl;
+            //guardar el valor dentro del CSV aquí
         }
     }
     

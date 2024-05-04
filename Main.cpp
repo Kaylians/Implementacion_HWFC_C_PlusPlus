@@ -843,7 +843,7 @@ int main(int argc, char* argv[]) {
                 // Extraer la parte del nombre de archivo antes del punto
                 nameWithoutExt = exampleMap.substr(0, dotPos);
             }
-            SaveInfoOnFile(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles);
+            SaveInfoOnFileAndMetrics(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles);
 
             //dibujar los patrones en una imagen aparte
             initializePosMap(unCollapseMap, PosibleTiles, Y);

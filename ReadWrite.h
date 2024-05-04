@@ -31,7 +31,7 @@ void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vect
 //funcion para reconstruir una imagen a partir del mapa generado
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y);
 
-void SaveInfoOnFile(const std::vector<Pixel>& pixeles, const std::vector<Pattern>& usedPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles);
+void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& pixeles, const std::vector<Pattern>& usedPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles);
 
 std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, const std::string& nombreBase, const std::string& fileType);
 
