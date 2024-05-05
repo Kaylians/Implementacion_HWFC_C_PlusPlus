@@ -156,17 +156,11 @@ std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, cons
     return filesName;
 }
 bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, int ancho, int alto, const std::vector<Pixel>& pixels) {
-    std::string carpeta = "generatedLevels/"+carpetaBase;
-
-    if (!crearCarpeta(carpeta)) {
+    if (!crearCarpeta(carpetaBase)) {
         return false;
     }
-
-    // Obtener un nombre único para el archivo .ppm
-
-
     // Ruta completa del archivo .ppm
-    std::string rutaArchivo = carpeta + "/" + nombreBase;
+    std::string rutaArchivo = carpetaBase + "/" + nombreBase;
 
     // Escribir los datos en el archivo .ppm
     std::ofstream archivo(rutaArchivo, std::ios::binary);
@@ -190,17 +184,13 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, i
     return true;
 
 }
-bool SavePatternInfoFile(const std::string& carpetaBase, const std::string& formato, const std::vector<Pattern>& vec, std::string& name) {
-    std::string carpeta = "generatedLevels/" + carpetaBase;
-
-    if (!crearCarpeta(carpeta)) {
+bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string& formato, const std::vector<Pattern>& vec, std::string& name) {
+    if (!crearCarpeta(carpetaBase)) {
         return false;
     }
-
-    std::string nombreBase = "Map";
-    std::string nombreUnico = obtenerNombreUnico(carpeta, nombreBase, formato);
+    std::string nombreUnico = obtenerNombreUnico(carpetaBase, "Map", formato);
     name = nombreUnico;
-    std::string rutaArchivo = carpeta + "/" + nombreUnico;
+    std::string rutaArchivo = carpetaBase + "/" + nombreUnico;
     std::ofstream archivo(rutaArchivo, std::ios::binary);
     
     if (archivo.is_open()) {
@@ -217,13 +207,40 @@ bool SavePatternInfoFile(const std::string& carpetaBase, const std::string& form
 
     return true;
 }
+bool SaveInfo_CSV_Hammming(const std::string& carpetaBase, const std::vector<std::string>& MapNames, const std::vector<std::vector<int>>& similarity) {
+    if (!crearCarpeta(carpetaBase)) {
+        return false;
+    }
+    std::string rutaArchivo = carpetaBase + "/" + "Hamming" + ".csv";
+    std::ofstream archivo(rutaArchivo, std::ios::binary);
+    if (archivo.is_open()) {
+        for (int i = 0; i <= MapNames.size(); i++) {
+            for (int j = 0; j <= MapNames.size(); j++) {
+                if (j == 0 && i == 0) {
+                    archivo << "Hamming" << ";";
+                }
+                else if (i == 0) {
+                    archivo << MapNames[j-1] << ";";
+                }
+                else if (j == 0) {
+                    archivo << MapNames[i-1] << "h;";
+                }
+                else {
+                    archivo << similarity[i-1][j-1] << ";";
+                }
+            }
+            archivo << "\n";
+        }
+        archivo.close();
+    }
+    return true;
+}
 std::vector<Pattern> cargarVectorDesdeArchivoCSV(const std::string& carpetaBase, const std::string format, char delimiter = ';') {
-    std::string carpeta = "generatedLevels/" + carpetaBase;
 
-    if (!crearCarpeta(carpeta)) {
+    if (!crearCarpeta(carpetaBase)) {
         ControlString("carpeta no existe");
     }
-    std::string rutaArchivo = carpeta + "/" + format;
+    std::string rutaArchivo = carpetaBase + "/" + format;
     std::vector<Pattern> vec;
     std::cerr << "la ruta del archivo es: " << rutaArchivo << std::endl;
     std::ifstream archivo(rutaArchivo);
@@ -261,29 +278,37 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const std::string& carpetaBase,
     return vec;
 }
 void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size, const std::vector<Pixel>& posibleTiles) {
-    std::string folder = mode +"_size_" + std::to_string(size);
-    std::string fileName;
-
-
-    std::string nombreUnico = obtenerNombreUnico("generatedLevels/" + folder, "Map", ".ppm");
+    std::string fileName, 
+        folder = "generatedLevels/" + mode + "_size_" + std::to_string(size), 
+        nombreUnico = obtenerNombreUnico( 
+        folder, "Map", ".ppm");
 
     //guardado del mapa actual de la ejecución
     SaveMapFile(folder,nombreUnico, size, size, data);
-    SavePatternInfoFile(folder, ".csv", dataPattern, fileName);
-
+    SaveInfo_CSV_PatternsUsed(folder, ".csv", dataPattern, fileName);
     //realizar hamming
-    std::vector<std::string> SavePPMNames = ObtenerNombresArchivos("generatedLevels/" + folder, "Map", ".ppm");
+    std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(folder, "Map", ".ppm");
+    std::vector<Pixel> Map1, Map2; //std::vector<Pixel> Map1 = simpleHammingPPM( + folder +"/" + nombreUnico);
+    std::string Map1_Name, Map2_Name;
+    std::vector<std::vector<int>> similarity;
+    std::vector<int> tmp_simil;
 
-
-    std::vector<Pixel> Map1 = simpleHammingPPM("generatedLevels/" + folder +"/" + nombreUnico);
     for (int i = 0; i < SavePPMNames.size(); i++) {
-        std::vector<Pixel> Map2 = simpleHammingPPM("generatedLevels/" + folder + "/" + SavePPMNames[i]);
-        int similarity = hammingMetric(Map1, Map2);
-        ControlPoint(similarity);
+        Map1_Name = folder + "/" + SavePPMNames[i];
+        Map1 = simpleHammingPPM(Map1_Name);
+        tmp_simil.clear();
+        for (int j = 0; j < SavePPMNames.size(); j++) {
+            Map2_Name = folder + "/" + SavePPMNames[j];
+            Map2 = simpleHammingPPM(Map2_Name);
+            int aux = hammingMetric(Map1, Map2);
+            tmp_simil.push_back(aux);
+        }
+        similarity.push_back(tmp_simil);
     }
 
+    SaveInfo_CSV_Hammming(folder, SavePPMNames, similarity);
     //realizar KLD
-    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos("generatedLevels/" + folder, "Map", ".csv");
+    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos(folder, "Map", ".csv");
     for (int i = 0; i < SaveCSVNames.size(); i++) {
         if (SaveCSVNames[i] != fileName) {
             std::vector<Pattern> LoadedFile = cargarVectorDesdeArchivoCSV(folder, SaveCSVNames[i]); 
