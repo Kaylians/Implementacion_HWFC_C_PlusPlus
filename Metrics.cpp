@@ -54,7 +54,7 @@ double KL_Formula(double p, double q) {
     }
     return p * log(p / q);
 }
-void KL_Divergence_UnmatchPercentAdd( std::vector<Pattern>& P, std::vector<Pattern>& matches, std::vector<float>& P_values) {
+void KL_Divergence_UnmatchPercentAdd(std::vector<Pattern>& P, std::vector<Pattern>& matches, std::vector<float>& P_values) {
     std::vector<Pattern> unmatches;
     int incompatibilityCounter = 0;
     for (int i = 0; i < P.size(); i++) {
@@ -72,7 +72,6 @@ void KL_Divergence_UnmatchPercentAdd( std::vector<Pattern>& P, std::vector<Patte
         incompatibilityCounter += unmatches[i].weight;
     }
     P_values.push_back(incompatibilityCounter);
-    unmatches.clear();
 }
 double KL_Divergence(std::vector<Pattern> P, std::vector<Pattern> Q) {
     std::vector<float> P_values, Q_values;
@@ -87,7 +86,7 @@ double KL_Divergence(std::vector<Pattern> P, std::vector<Pattern> Q) {
                     Q_values.push_back(Q[j].weight);
                     matches.push_back(P[i]);
                 }
-               
+                
             }
         }
     }

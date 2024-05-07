@@ -3,8 +3,12 @@
 #include "Pattern.h"
 #include "Metrics.h"
 #include "DebugUtility.h"
+#include <locale>
 namespace fs = std::filesystem;
-
+struct Comma final : std::numpunct<char>
+{
+    char do_decimal_point() const override { return ','; }
+};
 std::vector<Pixel> simpleHammingPPM(const std::string& exampleName) {
     std::vector<Pixel> pixeles;
     int w, h;
@@ -155,6 +159,49 @@ std::vector<std::string> ObtenerNombresArchivos(const std::string& carpeta, cons
     }
     return filesName;
 }
+std::vector<Pattern> cargarVectorDesdeArchivoCSV(const int N, const std::string& carpetaBase, const std::string format, char delimiter = ';') {
+
+    if (!crearCarpeta(carpetaBase)) {
+        ControlString("carpeta no existe");
+    }
+    std::string rutaArchivo = carpetaBase + "/" + format;
+    std::vector<Pattern> vec;
+    std::cerr << "la ruta del archivo es: " << rutaArchivo << std::endl;
+    std::ifstream archivo(rutaArchivo);
+    if (archivo.is_open()) {
+        std::string linea;
+        while (std::getline(archivo, linea)) {
+            Pattern pat(0, 0);
+            std::istringstream iss(linea);
+            std::string token;
+
+            // Leer N
+            if (std::getline(iss, token, delimiter)) {
+                pat.N = std::stoi(token);
+            }
+
+            // Leer weight
+            if (std::getline(iss, token, delimiter)) {
+                pat.weight = std::stoi(token);
+            }
+
+            // Leer pixelesCoo
+            while (std::getline(iss, token, delimiter)) {
+                pat.pixelesCoo.push_back(std::stoi(token));
+            }
+            if (pat.N == N) {
+                vec.push_back(pat);
+            }
+
+        }
+        archivo.close();
+        std::cout << "Vector cargado desde archivo de texto: " << rutaArchivo << std::endl;
+    }
+    else {
+        std::cerr << "Error al abrir el archivo en txt: " << rutaArchivo << std::endl;
+    }
+    return vec;
+}
 bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, int ancho, int alto, const std::vector<Pixel>& pixels) {
     if (!crearCarpeta(carpetaBase)) {
         return false;
@@ -184,17 +231,17 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, i
     return true;
 
 }
-bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string& formato, const std::vector<Pattern>& vec, std::string& name) {
+bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string& formato, const std::vector<Pattern>& dataPattern, std::string& fileName) {
     if (!crearCarpeta(carpetaBase)) {
         return false;
     }
     std::string nombreUnico = obtenerNombreUnico(carpetaBase, "Map", formato);
-    name = nombreUnico;
+    fileName = nombreUnico;
     std::string rutaArchivo = carpetaBase + "/" + nombreUnico;
     std::ofstream archivo(rutaArchivo, std::ios::binary);
     
     if (archivo.is_open()) {
-        for (const Pattern& pat : vec) {
+        for (const Pattern& pat : dataPattern) {
             archivo << pat.N << ";";
             archivo << pat.weight << ";";
             for (int i = 0; i < pat.pixelesCoo.size(); i++) {
@@ -207,7 +254,7 @@ bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string
 
     return true;
 }
-bool SaveInfo_CSV_Hammming(const std::string& carpetaBase, const std::vector<std::string>& MapNames, const std::vector<std::vector<int>>& similarity) {
+bool SaveInfo_CSV_Hamming(const std::string& carpetaBase, const std::vector<std::string>& MapNames, const std::vector<std::vector<int>>& similarity) {
     if (!crearCarpeta(carpetaBase)) {
         return false;
     }
@@ -235,89 +282,79 @@ bool SaveInfo_CSV_Hammming(const std::string& carpetaBase, const std::vector<std
     }
     return true;
 }
-std::vector<Pattern> cargarVectorDesdeArchivoCSV(const std::string& carpetaBase, const std::string format, char delimiter = ';') {
-
+bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase, const std::vector<Pattern>& dataPattern, const std::string& fileName) {
+    if (N.size() <= 0)
+        return false;
     if (!crearCarpeta(carpetaBase)) {
-        ControlString("carpeta no existe");
+        return false;
     }
-    std::string rutaArchivo = carpetaBase + "/" + format;
-    std::vector<Pattern> vec;
-    std::cerr << "la ruta del archivo es: " << rutaArchivo << std::endl;
-    std::ifstream archivo(rutaArchivo);
-    if (archivo.is_open()) {
-        std::string linea;
-        while (std::getline(archivo, linea)) {
-            Pattern pat (0,0);
-            std::istringstream iss(linea);
-            std::string token;
-
-            // Leer N
-            if (std::getline(iss, token, delimiter)) {
-                pat.N = std::stoi(token);
-            }
-
-            // Leer weight
-            if (std::getline(iss, token, delimiter)) {
-                pat.weight = std::stoi(token);
-            }
-
-            // Leer pixelesCoo
-            while (std::getline(iss, token, delimiter)) {
-                pat.pixelesCoo.push_back(std::stoi(token));
-            }
-
-            vec.push_back(pat);
+    for (int z = 0; z < N.size(); z++) {
+        std::string aux = std::to_string(N[z]);
+        std::string rutaArchivo = carpetaBase + "/" + "KLD_" + aux + ".csv";
+        std::vector<Pattern> LoadedFile1, LoadedFile2;
+        std::ofstream archivo(rutaArchivo, std::ios::binary);
+        archivo.imbue(std::locale(std::locale::classic(), new Comma));
+        std::vector<std::string> MapNames = ObtenerNombresArchivos(carpetaBase, "Map", ".csv");
+        if (archivo.is_open()) {
             
+            for (int i = 0; i <= MapNames.size(); i++) {
+                for (int j = 0; j <= MapNames.size(); j++) {
+                    if (j == 0 && i == 0) {
+                        archivo << "KLD_" << aux << ";";
+                    }
+                    else if (i == 0) {
+                        archivo << MapNames[j - 1] << ";";
+                    }
+                    else if (j == 0) {
+                        archivo << MapNames[i - 1] << ";";
+                    }
+                    else {
+                        LoadedFile1 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[i - 1]);
+                        LoadedFile2 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[j - 1]);
+                        double result = KL_Divergence(LoadedFile1, LoadedFile2);
+                        std::cout << "Size: " << LoadedFile1.size() << " " << LoadedFile2.size() << std::endl;
+                        std::cout << "El valor de KLD de : " << MapNames[i - 1] << "---" << MapNames[j - 1] << ", es: " << result << std::endl;
+                        archivo << result << ";";
+                    }
+                }
+                archivo << "\n";
+            }
+            archivo.close();
         }
-        archivo.close();
-        std::cout << "Vector cargado desde archivo de texto: " << rutaArchivo << std::endl;
     }
-    else {
-        std::cerr << "Error al abrir el archivo en txt: " << rutaArchivo << std::endl;
-    }
-    return vec;
+    return true;
 }
-void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode,const int size, const std::vector<Pixel>& posibleTiles) {
+void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const std::vector<int>& N, const std::vector<int>& MN, const std::vector<int>& HN) {
     std::string fileName, 
-        folder = "generatedLevels/" + mode + "_size_" + std::to_string(size), 
+        baseFolder = "generatedLevels/" + mode + "_size_" + std::to_string(size), 
         nombreUnico = obtenerNombreUnico( 
-        folder, "Map", ".ppm");
+        baseFolder, "Map", ".ppm");
 
     //guardado del mapa actual de la ejecución
-    SaveMapFile(folder,nombreUnico, size, size, data);
-    SaveInfo_CSV_PatternsUsed(folder, ".csv", dataPattern, fileName);
+    SaveMapFile(baseFolder,nombreUnico, size, size, data);
     //realizar hamming
-    std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(folder, "Map", ".ppm");
+    std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(baseFolder, "Map", ".ppm");
     std::vector<Pixel> Map1, Map2; //std::vector<Pixel> Map1 = simpleHammingPPM( + folder +"/" + nombreUnico);
     std::string Map1_Name, Map2_Name;
     std::vector<std::vector<int>> similarity;
     std::vector<int> tmp_simil;
 
     for (int i = 0; i < SavePPMNames.size(); i++) {
-        Map1_Name = folder + "/" + SavePPMNames[i];
+        Map1_Name = baseFolder + "/" + SavePPMNames[i];
         Map1 = simpleHammingPPM(Map1_Name);
         tmp_simil.clear();
         for (int j = 0; j < SavePPMNames.size(); j++) {
-            Map2_Name = folder + "/" + SavePPMNames[j];
+            Map2_Name = baseFolder + "/" + SavePPMNames[j];
             Map2 = simpleHammingPPM(Map2_Name);
             int aux = hammingMetric(Map1, Map2);
             tmp_simil.push_back(aux);
         }
         similarity.push_back(tmp_simil);
     }
+    SaveInfo_CSV_Hamming(baseFolder, SavePPMNames, similarity);
 
-    SaveInfo_CSV_Hammming(folder, SavePPMNames, similarity);
     //realizar KLD
-    std::vector<std::string> SaveCSVNames = ObtenerNombresArchivos(folder, "Map", ".csv");
-    for (int i = 0; i < SaveCSVNames.size(); i++) {
-        if (SaveCSVNames[i] != fileName) {
-            std::vector<Pattern> LoadedFile = cargarVectorDesdeArchivoCSV(folder, SaveCSVNames[i]); 
-            double result = KL_Divergence(dataPattern, LoadedFile);
-
-            std::cout << "El valor de KLD de : " << fileName << "---" << SaveCSVNames[i] << ", es: " << result << std::endl;
-            //guardar el valor dentro del CSV aquí
-        }
-    }
-    
-    //PerformMetrics(ArchivosCargados);
+    SaveInfo_CSV_PatternsUsed(baseFolder, ".csv", dataPattern, fileName);
+    SaveInfo_CSV_KLD(N, baseFolder, dataPattern, fileName);
+    SaveInfo_CSV_KLD(MN, baseFolder, dataPattern, fileName);
 }
