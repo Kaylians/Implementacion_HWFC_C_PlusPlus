@@ -41,12 +41,6 @@ void ConvertValuesToPercent(std::vector<float>& values, bool includeIncompatibil
         tmp_values.push_back((values[i] / totalWeight) * 100);
     }
     values = tmp_values;
-    float test = 0;
-    for (int i = 0; i < tmp_values.size(); i++) {
-        test += tmp_values[i];
-    }
-    ControlPoint(test);
-
 }
 double KL_Formula(double p, double q) {
     if (p == 0.0 || q == 0.0) {

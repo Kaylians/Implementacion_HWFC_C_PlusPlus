@@ -166,7 +166,6 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const int N, const std::string&
     }
     std::string rutaArchivo = carpetaBase + "/" + format;
     std::vector<Pattern> vec;
-    std::cerr << "la ruta del archivo es: " << rutaArchivo << std::endl;
     std::ifstream archivo(rutaArchivo);
     if (archivo.is_open()) {
         std::string linea;
@@ -195,7 +194,6 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const int N, const std::string&
 
         }
         archivo.close();
-        std::cout << "Vector cargado desde archivo de texto: " << rutaArchivo << std::endl;
     }
     else {
         std::cerr << "Error al abrir el archivo en txt: " << rutaArchivo << std::endl;
@@ -227,7 +225,6 @@ bool SaveMapFile(const std::string& carpetaBase, const std::string nombreBase, i
     }
 
     archivo.close();
-    std::cout << "Archivo guardado correctamente en: " << rutaArchivo << std::endl;
     return true;
 
 }
@@ -282,7 +279,7 @@ bool SaveInfo_CSV_Hamming(const std::string& carpetaBase, const std::vector<std:
     }
     return true;
 }
-bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase, const std::vector<Pattern>& dataPattern, const std::string& fileName) {
+bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase) {
     if (N.size() <= 0)
         return false;
     if (!crearCarpeta(carpetaBase)) {
@@ -311,9 +308,9 @@ bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase,
                     else {
                         LoadedFile1 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[i - 1]);
                         LoadedFile2 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[j - 1]);
-                        double result = KL_Divergence(LoadedFile1, LoadedFile2);
-                        std::cout << "Size: " << LoadedFile1.size() << " " << LoadedFile2.size() << std::endl;
-                        std::cout << "El valor de KLD de : " << MapNames[i - 1] << "---" << MapNames[j - 1] << ", es: " << result << std::endl;
+                        double result1 = KL_Divergence(LoadedFile1, LoadedFile2);
+                        double result2 = KL_Divergence(LoadedFile2, LoadedFile1);
+                        double result = (result1 + result2) / 2;
                         archivo << result << ";";
                     }
                 }
@@ -324,14 +321,7 @@ bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase,
     }
     return true;
 }
-void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const std::vector<int>& N, const std::vector<int>& MN, const std::vector<int>& HN) {
-    std::string fileName, 
-        baseFolder = "generatedLevels/" + mode + "_size_" + std::to_string(size), 
-        nombreUnico = obtenerNombreUnico( 
-        baseFolder, "Map", ".ppm");
-
-    //guardado del mapa actual de la ejecución
-    SaveMapFile(baseFolder,nombreUnico, size, size, data);
+void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N, const std::vector<int>& MN) {
     //realizar hamming
     std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(baseFolder, "Map", ".ppm");
     std::vector<Pixel> Map1, Map2; //std::vector<Pixel> Map1 = simpleHammingPPM( + folder +"/" + nombreUnico);
@@ -354,7 +344,45 @@ void SaveInfoOnFileAndMetrics(const std::vector<Pixel>& data, const std::vector<
     SaveInfo_CSV_Hamming(baseFolder, SavePPMNames, similarity);
 
     //realizar KLD
+    SaveInfo_CSV_KLD(N, baseFolder);
+    SaveInfo_CSV_KLD(MN, baseFolder);
+
+}
+bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, const float& duration, const int& backtrackingUse) {
+    if (!crearCarpeta(carpetaBase)) {
+        return false;
+    }
+    // Ruta completa del archivo .ppm
+    
+    std::string rutaArchivo = carpetaBase + "/" + "GenerationTime" + ".csv";
+
+    // Escribir los datos en el archivo .ppm
+    std::ofstream archivo(rutaArchivo, std::ios::app);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo para escritura: " << rutaArchivo << std::endl;
+        return false;
+    }
+    ControlString("tiempo guardado");
+    archivo << nombreBase << ";" << duration << ";" << backtrackingUse << "\n";
+
+    // Verificar si ocurrieron errores durante la escritura
+    if (archivo.bad()) {
+        std::cerr << "Error al escribir en el archivo: " << rutaArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    return true;
+}
+void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const std::vector<int>& N, const std::vector<int>& MN, const std::vector<int>& HN, const float& duration, const int& backtrackingUse) {
+    std::string fileName,
+        nombreUnico = obtenerNombreUnico(
+            baseFolder, "Map", ".ppm");
+
+    //guardado del mapa actual de la ejecución
+    SaveMapFile(baseFolder, nombreUnico, size, size, data);
     SaveInfo_CSV_PatternsUsed(baseFolder, ".csv", dataPattern, fileName);
-    SaveInfo_CSV_KLD(N, baseFolder, dataPattern, fileName);
-    SaveInfo_CSV_KLD(MN, baseFolder, dataPattern, fileName);
+    SaveTime(baseFolder, nombreUnico, duration, backtrackingUse);
+    
 }

@@ -82,6 +82,7 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <stdexcept>
 
 #include "Pattern.h"
 #include "Main.h"
@@ -422,6 +423,7 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     std::sort(RPP.begin(), RPP.end());
     RPP.erase(std::unique(RPP.begin(), RPP.end()), RPP.end());
 
+    printMap(unCollapseMap, Y, posibleTilesN, RPP, false);
     /*
     std::cout << "regiones para propagar: " << RPP.size() << " == ";
     if (RPP.size() == 0) {
@@ -508,7 +510,6 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     }
     return true;
 }
-
 
 int main(int argc, char* argv[]) {
     std::vector<int> N;
@@ -613,9 +614,28 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error al analizar las opciones: " << e.what() << std::endl;
         return 1;
     }
+    int inputValue = -1;
+    do {
+        try {
+            std::cout << "Usar backtracking? [1 Si / 0 No]";
+            std::cin >> inputValue;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+        
+    } while (inputValue != 1 && inputValue != 0);
+    bool backtrackingActive;
+    if (inputValue == 1) {
+        backtrackingActive = true;
+    }
+    else {
+        backtrackingActive = false;
+    }
 
     initializeRandomSeed();
     std::string filename = "./" + exampleMap, PPM_Identifier; std::ifstream file(filename, std::ios::binary); int inputImageWidth, inputImageHeight;
+    std::string baseFolder = "generatedLevels/" + mode + "_size_" + std::to_string(Y);
 
     std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida, PosibleTiles;
     std::vector<std::vector<int>> unCollapseMap; std::vector<int> RPP, reserveRPP; RPP.resize(0); reserveRPP.resize(0);
@@ -624,8 +644,6 @@ int main(int argc, char* argv[]) {
     if (readImagePPM(exampleMap, inputImageWidth, inputImageHeight, pixelVector)) {
         std::cout << "Imagen PPM leida exitosamente." << std::endl;
     }
-    //inicio de cronometro
-    auto start_time = std::chrono::high_resolution_clock::now();
 
     //defincion de las casillas
     defineTiles(pixelVector, PosibleTiles);
@@ -637,7 +655,7 @@ int main(int argc, char* argv[]) {
 
     //almacen de informaci�n para backtracking
     std::vector<int> BT_pos; std::vector<std::vector<std::vector<int>>> BT_cMap; std::vector<std::vector<int>> BT_RPP;
-    int step = 0, toStep = 0, lastStep = 0, backtrackUses = 0; bool backtrackingRequested = true;
+    int step = 0, backStep = 0, backtrackUses = 0, totalBacktracking = 0;
     Pattern lastSelectedPattern(0, 0);
 
     std::vector<Pattern> patternArrayBase, patternArrayLow, patternArrayMid, patternArrayHigh, usedPatternArray;
@@ -662,7 +680,13 @@ int main(int argc, char* argv[]) {
         definePatternsHWFC(patternArrayHigh, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
     }
     infoPatternUpdateID(patternArrayBase,patternArrayLow,patternArrayMid,patternArrayHigh);
+    
+    //inicio del algoritmo y generación del mapa
     do {
+        //inicio de cronometro
+        auto start = std::chrono::high_resolution_clock::now();
+        std::cout << "Iniciando creacion de nuevo mapa." << std::endl;
+
         //EJECUCION DE JERARQUIA ALTA EN HWFC
         if (mode == "HWFC") {
             //colapso de patrones de alta jerarquia iniciales
@@ -681,6 +705,15 @@ int main(int argc, char* argv[]) {
 
                 if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false)) {
                     //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false, false);
+                    
+                    //Guardado de Backtracking
+                    if (backtrackingActive) {
+                        if (RPP.size() > 0) {
+                            BT_cMap.push_back(unCollapseMap);
+                            BT_RPP.push_back(RPP);
+                            step++;
+                        }
+                    }
                 }
                 else i--;
             }
@@ -693,10 +726,20 @@ int main(int argc, char* argv[]) {
                 //std::cout << GREEN << "COLAPSAR mediano" << RESET << std::endl;
                 if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayMid, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false))
                 {
-                    usedPatternArray.push_back(lastSelectedPattern);
+                    //Guardado de Backtracking
+                    if (backtrackingActive) {
+                        if (RPP.size() > 0) {
+                            BT_cMap.push_back(unCollapseMap);
+                            BT_RPP.push_back(RPP);
+                            usedPatternArray.push_back(lastSelectedPattern);
+                            step++;
+                        }
+                    }
+                    else {
+                        usedPatternArray.push_back(lastSelectedPattern);
+                    }
                     //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, true, false);
                 }
-                //ControlPoint(RPP.size());
             } while (RPP.size() > 1);
 
         }
@@ -711,11 +754,11 @@ int main(int argc, char* argv[]) {
         //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         //std::exit(0);
         int controlPointN = 0;
+
         while (!mapCompleted(unCollapseMap)) {
             //std::cout << PURPLE << "step: " << step << RESET << std::endl;
             //seleccionar una casilla para colpasar
             //std::cout << GREEN << "SELECCIONAR " << RESET << std::endl;
-
             if (randomStart) {
                 lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
                 randomStart = false;
@@ -729,102 +772,68 @@ int main(int argc, char* argv[]) {
             //std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
             if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), true)) {
                //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
-
                 //std::cout << " " << std::endl;
                 //std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
                 //propagate(unCollapseMap, RPP, patternArrayLow, lowestEntropyTilePos, Y);
                 //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
-                usedPatternArray.push_back(lastSelectedPattern);
-
-                if (RPP.size() > 0) {
-                    BT_cMap.push_back(unCollapseMap);
-                    BT_pos.push_back(lowestEntropyTilePos);
-                    BT_RPP.push_back(RPP);
-                    //std::cout << "Guardado de backtracking completado" << std::endl;
-                    step++;
-
-                    /*
-                    std::cout << "Posiciones restantes: ";
-                    for (int i = 0; i < RPP.size(); i++) {
-                        std::cout << RPP[i] << " ";
+                
+                //Guardado de Backtracking
+                if (backtrackingActive) {
+                    if (RPP.size() > 0) {
+                        BT_cMap.push_back(unCollapseMap);
+                        BT_RPP.push_back(RPP);
+                        usedPatternArray.push_back(lastSelectedPattern);
+                        step++;
                     }
-                    std::cout << std::endl;
-                    */
-                    backtrackingRequested = false;
+                }
+                else {
+                    usedPatternArray.push_back(lastSelectedPattern);
                 }
             }
             if (RPP.size() == 0 && !mapCompleted(unCollapseMap)) {
-                ControlString("Sin resultado, backtracking apagado, reiniciando");
-                serial_it--;
-                break;
-            }
-                /*
-                //a�adir un do while que vaya eliminando las posiciones en el backtracking anterior al usado antes de reemplazarlo 
-                std::cout << YELLOW << "BACKTRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << RESET << std::endl;
-
-                auto end_time = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-                std::cout << "Tiempo de ejecucion hasta backtracking: " << duration << " ms" << std::endl;
-
-                int posToDelete;
-
-                do {
-                    step = BT_cMap.size() - 1;
-                    unCollapseMap = BT_cMap.back();
-                    RPP = BT_RPP.back();
-                    if (!backtrackingRequested) {
-                        posToDelete = lowestEntropyTilePos;
-                    }
-                    auto i = std::find(RPP.begin(), RPP.end(), posToDelete);
-                    std::cout << "elemento a eliminar " << posToDelete << ": ";
-                    for (int j = 0; j < RPP.size(); j++) {
-                        std::cout << RPP[j] << " ";
-                    }
-                    std::cout << std::endl;
-
-                    if (i != RPP.end()) {
-                        RPP.erase(i);
+                if (backtrackingActive) {
+                    if (step - backtrackUses > 0) {
+                        step = step - backtrackUses;
+                        unCollapseMap = BT_cMap[step - 1];
+                        RPP = BT_RPP[step - 1];
+                        BT_cMap.resize(step - 1);
+                        BT_RPP.resize(step - 1);
+                        usedPatternArray.resize(step - 1);
+                        backtrackUses++;
                     }
                     else {
-                        std::cout << "elemento no encontrado " << std::endl;
+                        initializePosMap(unCollapseMap, PosibleTiles, Y);
+                        usedPatternArray.clear();
+                        totalBacktracking += backtrackUses;
+                        step = 0;
+                        backtrackUses = 0;
                     }
-
-                    posToDelete = BT_pos.back();
-                    BT_cMap.pop_back();
-                    BT_pos.pop_back();
-                    BT_RPP.pop_back();
-
-                    backtrackUses++;
-                    backtrackingRequested = true;
-                } while (RPP.empty());
-
-                //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
+                    if (RPP.size() == 0) {
+                        searchForRPP(unCollapseMap,RPP);
+                    }
+                }            
+                else {
+                    ControlString("Sin resultado, backtracking apagado, reiniciando");
+                    break;
+                }
+                
             }
-            /*
-            else {
-                std::cout << YELLOW << "reintentar con otro punto de propagacion" << RESET << std::endl;
-            }
-
-            std::cout << "posibles regiones de propagacion restantes: " << RPP.size() << std::endl;
-            std::cout << "usos del backtracking: " << backtrackUses << std::endl;
-            std::cout << PURPLE << "punto de iteracion" << RESET << std::endl;
-            std::cout << std::endl;
-            std::cout << std::endl;
-            */
-            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
 
 
         if (mapCompleted(unCollapseMap)) {
             std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
-            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+        
             //fin del cronometro del tiempo de ejecucion
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+            auto end = std::chrono::high_resolution_clock::now();
+            long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            totalBacktracking += backtrackUses;
+
+            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+
             std::cout << "Tiempo de ejecucion: " << duration << " ms" << std::endl;
-            std::cout << "posible pixel color: " << PosibleTiles.size() << std::endl;
-            std::cout << "usos del backtracking: " << backtrackUses << std::endl;
+            std::cout << "usos del backtracking: " << totalBacktracking << std::endl;
+
             //definicion de metricas
             //KL Divergence
 
@@ -835,7 +844,7 @@ int main(int argc, char* argv[]) {
             //guardado de la imagen en un nuevo archivo
 
             // Metodo tamaño (numero de generacion)
-
+            
             findUniquePattern(usedPatternArray);
             size_t dotPos = exampleMap.find('.');
             std::string nameWithoutExt = "";
@@ -843,8 +852,10 @@ int main(int argc, char* argv[]) {
                 // Extraer la parte del nombre de archivo antes del punto
                 nameWithoutExt = exampleMap.substr(0, dotPos);
             }
-            SaveInfoOnFileAndMetrics(pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles, N, MN, HN);
+            std::cout << "Guardando y procesando la informacion en archivos..." << std::endl;
 
+            SaveMapAndTime(baseFolder, pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles, N, MN, HN, duration, backtrackUses);
+            std::cout << "Guardando completado." << std::endl;
             //dibujar los patrones en una imagen aparte
             initializePosMap(unCollapseMap, PosibleTiles, Y);
             serial_it++;
@@ -856,13 +867,14 @@ int main(int argc, char* argv[]) {
         BT_pos.clear();
         BT_cMap.clear();
         BT_RPP.clear();
+        backtrackUses = 0;
+        totalBacktracking = 0;
+        step = 0;
         
 
     }while (serial_it_max > serial_it);
 
-
-    
-
+    PerformMetrics(baseFolder, N, MN);
     createPatternDraw(patternArrayLow, patterVectorSalida, Y);
     if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;

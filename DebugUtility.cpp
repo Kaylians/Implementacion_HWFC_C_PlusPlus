@@ -17,7 +17,7 @@ bool SearchRPP(std::vector<int> RPP, int target) {
 }
 //funciona para imprimir el mapa que son valores int
 void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi, std::vector<int>& RPP, bool MarkRPP) {
-    MarkRPP = true;
+    MarkRPP = false;
     for (int i = -1; i < size; i++) {
         if (i == -1) {
             std::cout << BLUE << " X" << " " << RESET << "|| ";
@@ -57,6 +57,8 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                             std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                         else if (unCollapseMap[j + i * size].front() == 4)
                             std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else
+                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                     }
                     else if (unCollapseMap[j + i * size].front() < 10) {
                         if (unCollapseMap[j + i * size].front() == 0)
@@ -69,6 +71,10 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                             std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                         else if (unCollapseMap[j + i * size].front() == 4)
                             std::cout << YELLOW << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        else if (unCollapseMap[j + i * size].front() > 9)
+                            std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << RESET << "|| ";
+                        else
+                            std::cout << CYAN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
                     }
                     else {
                         std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
