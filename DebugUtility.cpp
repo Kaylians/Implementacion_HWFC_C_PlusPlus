@@ -17,18 +17,18 @@ bool SearchRPP(std::vector<int> RPP, int target) {
 }
 //funciona para imprimir el mapa que son valores int
 void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi, std::vector<int>& RPP, bool MarkRPP) {
-    MarkRPP = false;
+    MarkRPP = true;
     for (int i = -1; i < size; i++) {
         if (i == -1) {
-            std::cout << BLUE << " X" << " " << RESET << "|| ";
+            std::cout << BLUE << " X" << RESET << "||";
             for (int z = 0; z < size; z++) {
                 if (z < 10) {
 
-                    std::cout << BLUE << " " << z << " " << RESET << "|| ";
+                    std::cout << BLUE << " " << z  << RESET << "||";
                 }
                 else {
 
-                    std::cout << BLUE << z << " " << RESET << "|| ";
+                    std::cout << BLUE << z << RESET << "||";
                 }
             }
         }
@@ -37,62 +37,62 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                 if (j == -1) {
                     if (i < 10) {
 
-                        std::cout << " " << BLUE << i << RESET << " || ";
+                        std::cout << " " << BLUE << i << RESET << "||";
                     }
                     else {
 
-                        std::cout << BLUE << i << RESET << " || ";
+                        std::cout << BLUE << i << RESET << "||";
                     }
                 }
                 
                 else if (unCollapseMap[j + i * size].size() == 1) {
                     if (unCollapseMap[j + i * size].front() < 10 && SearchRPP(RPP, j + i * size) && MarkRPP) {
                         if (unCollapseMap[j + i * size].front() == 0)
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 1)
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 2)
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 3)
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 4)
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else
-                            std::cout << PURPLE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                     }
                     else if (unCollapseMap[j + i * size].front() < 10) {
                         if (unCollapseMap[j + i * size].front() == 0)
-                            std::cout << GREEN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << GREEN  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 1)
-                            std::cout << RED << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << RED  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 2)
-                            std::cout << BLUE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << BLUE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 3)
-                            std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << WHITE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 4)
-                            std::cout << YELLOW << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << YELLOW  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() > 9)
-                            std::cout << WHITE << " " << unCollapseMap[j + i * size].front() << RESET << "|| ";
+                            std::cout << WHITE  << unCollapseMap[j + i * size].front() << RESET << "||";
                         else
-                            std::cout << CYAN << " " << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                            std::cout << CYAN  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                     }
                     else {
-                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "|| ";
+                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                     }
                 }
                 else if (SearchRPP(RPP, j + i * size) && MarkRPP)
-                    std::cout << PURPLE << " " << "." << " " << RESET << "|| ";
+                    std::cout << PURPLE << "." << " " << RESET << "||";
 
                 else if (unCollapseMap[j + i * size].size() == 0) {
-                    std::cout << "  " << " || ";
+                    std::cout << "  " << "||";
                 }
                 else if (unCollapseMap[j + i * size].size() == posibi) {
-                    std::cout << "  " << " || ";
+                    std::cout << "  " << "||";
                 }
                 else if (unCollapseMap[j + i * size].size() < posibi)
-                    std::cout << PURPLE << " " << unCollapseMap[j + i * size].size() << RESET << " || ";
+                    std::cout << PURPLE << " " << unCollapseMap[j + i * size].size() << RESET << "||";
                 else
-                    std::cout << "X ||";
+                    std::cout << "X||";
             }
         }
 
