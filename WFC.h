@@ -8,9 +8,9 @@
 #include <vector>
 #include <string>
 
-void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, int N);
+void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N);
 void findUniquePattern(std::vector<Pattern>& pattArray);
 void makeMirroRotPattern(std::vector<Pattern>& pattArray);
+void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pattern, std::vector<Pattern>& pHigh);
 
-void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow, std::vector<Pattern>& pMid, std::vector<Pattern>& pHigh);
 #endif 

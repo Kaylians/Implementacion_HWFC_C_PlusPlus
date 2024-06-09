@@ -88,60 +88,51 @@ void makeMirroRotPattern(std::vector<Pattern>& pattArray) {
     pattArray = finalPattArray;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
-void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, int N) {
+void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N) {
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
-    int pos = 0, counter = 0;
+
     //seperacion de la imagen en multiples patrones
-    for (int y = 0; y <= inputImageHeight - N; y++) {
-        for (int x = 0; x <= inputImageWidth - N; x++) {
-            //definición de patron de tamaño N*N
-            for (int i = 0; i < N; i++) {
-                for (int j = 0; j < N; j++) {
-                    pos = (x + j + y * inputImageHeight + i * inputImageHeight);
-                    auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[pos]);
-                    tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
-                    tmpVector.push_back(pixelVector[pos]);
+    //for (int y = 0; y <= inputImageHeight - N; y++)
+    int pos = 0;
+    for (int z = 0; z < N.size(); z++) {
+        for (int y = 0; y <= inputImageHeight - N[z]; y++) {
+            for (int x = 0; x <= inputImageWidth - N[z]; x++) {
+                for (int i = 0; i < N[z]; i++) {
+                    for (int j = 0; j < N[z]; j++) {
+                        pos = (x + j + y * inputImageHeight + i * inputImageHeight);
+                        auto e = std::find(posibleTiles.begin(), posibleTiles.end(), pixelVector[pos]);
+                        tmpCooVector.push_back(std::distance(posibleTiles.begin(), e));
+                        tmpVector.push_back(pixelVector[pos]);
+                    }
                 }
+
+                Pattern newPattern(pattArray.size(), N[z]);
+                newPattern.addPixelVector(tmpVector);
+                newPattern.addPixelCooVector(tmpCooVector);
+                pattArray.push_back(newPattern);
+                tmpVector.clear();
+                tmpCooVector.clear();
             }
-            //guardado del patron y creación de espejo y rotaciones
-            //definir y añadir patron base al arreglo
-            Pattern newPattern(pattArray.size(), N);
-            newPattern.addPixelVector(tmpVector);
-            newPattern.addPixelCooVector(tmpCooVector);
-            pattArray.push_back(newPattern);
-
-            tmpVector.clear();
-            tmpCooVector.clear();
         }
+        findUniquePattern(pattArray);
+        makeMirroRotPattern(pattArray);
     }
-    std::cout << "patrones obtenidos para tamaño de patron " << N << ": " << pattArray.size() << std::endl;
-
-    //definicion de patrones unicos y marcado/eliminacion de elementos repetidos
-    findUniquePattern(pattArray);
 
     std::cout << "Patrones base obtenidos de la imagen: " << pattArray.size() << std::endl;
     std::sort(pattArray.begin(), pattArray.end(), comparePatternWFC);
 
-    //creacion de patrones espejo y rotaciones
-    makeMirroRotPattern(pattArray);
-
     for (int i = 0; i < pattArray.size(); i++) {
         pattArray[i].id = i;
-        //std::cout << "conteo de patrones: patron " << pattArray[i].id << " se repite: " << pattArray[i].weight;
-        if (pattArray[i].pattern) {
-            //std::cout << "  es patron";
-        }
-        //std::cout << std::endl;
     }
 
     std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
 }//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
-void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow, std::vector<Pattern>& pMid, std::vector<Pattern>& pHigh) {
-    pBase.reserve(pLow.size() + pMid.size() + pHigh.size());
+
+void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow, std::vector<Pattern>& pHigh) {
+    pBase.reserve(pLow.size() + pHigh.size());
     pBase.insert(pBase.end(), pLow.begin(), pLow.end());
-    if (pMid.size() > 0)
-        pBase.insert(pBase.end(), pMid.begin(), pMid.end());
+
     if (pHigh.size() > 0)
         pBase.insert(pBase.end(), pHigh.begin(), pHigh.end());
     findUniquePattern(pBase);
@@ -150,13 +141,6 @@ void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow
         for (int j = 0; j < pBase.size(); j++) {
             if (pHigh[i].comparePixelPattern(pBase[j].pixeles)) {
                 pHigh[i].id = pBase[j].id;
-            }
-        }
-    }
-    for (int i = 0; i < pMid.size(); i++) {
-        for (int j = 0; j < pBase.size(); j++) {
-            if (pMid[i].comparePixelPattern(pBase[j].pixeles)) {
-                pMid[i].id = pBase[j].id;
             }
         }
     }

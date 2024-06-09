@@ -59,7 +59,7 @@ bool readImagePPM(const std::string& exampleName, int& w, int& h, std::vector<Pi
 
     pixeles.resize(w * h);
     archivo.read(reinterpret_cast<char*>(pixeles.data()), pixeles.size() * sizeof(Pixel));
-
+    std::cout << "Imagen PPM leida exitosamente." << std::endl;
     return true;
 }
 //funcion para la escritura de una nueva imagen
@@ -321,7 +321,7 @@ bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase)
     }
     return true;
 }
-void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N, const std::vector<int>& MN) {
+void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N) {
     //realizar hamming
     std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(baseFolder, "Map", ".ppm");
     std::vector<Pixel> Map1, Map2; //std::vector<Pixel> Map1 = simpleHammingPPM( + folder +"/" + nombreUnico);
@@ -345,7 +345,6 @@ void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N, co
 
     //realizar KLD
     SaveInfo_CSV_KLD(N, baseFolder);
-    SaveInfo_CSV_KLD(MN, baseFolder);
 
 }
 bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, const float& duration, const int& backtrackingUse) {
@@ -375,7 +374,7 @@ bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, con
     archivo.close();
     return true;
 }
-void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const std::vector<int>& N, const std::vector<int>& MN, const std::vector<int>& HN, const float& duration, const int& backtrackingUse) {
+void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const float& duration, const int& backtrackingUse) {
     std::string fileName,
         nombreUnico = obtenerNombreUnico(
             baseFolder, "Map", ".ppm");

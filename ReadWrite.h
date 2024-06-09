@@ -31,9 +31,9 @@ void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vect
 //funcion para reconstruir una imagen a partir del mapa generado
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y);
 
-void SaveMapAndTime(const std::string& baseFolder, const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const std::vector<int>& N, const std::vector<int>& MN, const std::vector<int>& HN, const float& dur_milli, const int& backtrackingUse);
+void SaveMapAndTime(const std::string& baseFolder, const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const float& duration, const int& backtrackingUse);
 
-void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N, const std::vector<int>& MN);
+void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N);
 
 bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase);
 

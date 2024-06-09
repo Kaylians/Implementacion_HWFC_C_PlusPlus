@@ -2,72 +2,28 @@
 si por ejemplo un pixel se ve siempre solo, nunca esta solo, quizas si es lineal o en que formas se usa
 valor que guarde cuantos pixeles de cada tipo tiene un patron, ver como usar esa informacion
 ver distancia entre patrones, quizas con el punto inicial de donde estaban en el mapa original
-*/
+
 //siguiente tarea: 
-
-//aumentar la capacidad para hacer encajar los patrones, dar flexibilidad.
-//dar prioridad a encajar los patrones
-//revisar que no se queden puntos atras del 
-// 
-// problema principal, se pierden RPP aun utiles
-// 
-//link de reunion: https://reuna.zoom.us/my/nbarriga
-
-//revisar que los alta jerarquia no coincidan en el mismo espacio
-
-//Fallo colocar los rpp extendidos en los puntos que quedaron atras, realizar busqueda de todos los RPP utiles antes de cerrar ciclo medio
-
-//
 // puntero, revisar que RPP se esta eliminando
-//  
 // A�adir que no se toquen colores que no deben
-// 
 // A�adir un RPP para colapsados y no colapsados, primero se debe usar el de colapsados
-// 
+// g++ -g -Wall -Wextra -o WFC WFC.cpp
+//medir tiempo
+// Ejecuci�n: 
+// ./Main --mode "WFC" --LP 2 3 --example "example2.ppm" --size 10
+// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 HP_i --example "example.ppm" --size 10 --metric --serial_i 100
+// gdb ./Main
+// r (argumento)
+// valgrind ./WFC
+// valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./WFC
+// valgrind --tool=cachegrind ./WFC
+*/
+
+// g++ - O3 Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp - o Main - lboost_program_options
+
 
 // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
 
-
-
-// g++ -g -Wall -Wextra -o WFC WFC.cpp
-
-//medir tiempo
-
-// g++ -O3 Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
-
-// Ejecuci�n: 
-
-// ./Main --mode "WFC" --LP 2 3 --example "example2.ppm" --size 10
-
-// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 HP_i --example "example.ppm" --size 10 --metric --serial_i 100
-
-// gdb ./Main
-
-// r (argumento)
-
-// valgrind ./WFC
-
-// valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./WFC
-
-// valgrind --tool=cachegrind ./WFC
-
-//problemas encontrados:
-/*
-* //despues de terminar la ejecucion
-* double free or corruption (out)
-* free(): invalid size
-* munmap_chunk(): invalid pointer
-* Segmentation fault (core dumped)
-* munmap_chunk(): invalid pointer
-*
-* //durante la ejecucion
-* corrupted size vs. prev_size Aborted (core dumped)  reducir mapa(ultimo print)
-* free(): invalid next size (fast)  (despues de terminar la iteraci�n, no se llego a un print nuevo) (M)
-* munmap_chunk(): invalid pointer (misma situacion a la anterior) (no se tenia ningun RPP) (M)
-* malloc(): invalid next size (unsorted) (fallo durante la propagacion)
-* double free or corruption (!prev) (fallo durante la propagacion) (ultimo print reducir mapa)
-* malloc(): invalid next size (unsorted) (durante  el guardado de backtracking)
-*/
 
 #include <iostream>
 #include <fstream>
@@ -88,7 +44,6 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 #include "Main.h"
 #include "Pixel.h"
 #include "WFC.h"
-#include "MWFC.h"
 #include "HWFC.h"
 #include "ReadWrite.h"
 #include "DebugUtility.h"
@@ -122,7 +77,7 @@ bool searchVectorInt(const std::vector<int>& vec, int value) {
 //funcion para detener la ejecucion
 void stopExecute(int times, std::string texto) {
     ControlString(texto);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(times));
+    std::this_thread::sleep_for(std::chrono::milliseconds(times));
 }
 //funcion random para elegir el patron que m�s se repite
 int getRandomPatternWeighted(const std::vector<Pattern> pattern, int weightMultiplier) {
@@ -138,14 +93,14 @@ int getRandomPatternWeighted(const std::vector<Pattern> pattern, int weightMulti
     return distribution(gen);
 }
 //definir cuantas posibles estados puede tomar un pixel y cuantas veces aparece
-void defineTiles(const std::vector<Pixel>& pixelVector, std::vector<Pixel>& posibleTiles) {
+void define_Posible_Tiles(const std::vector<Pixel>& pixelVector, std::vector<Pixel>& posibleTiles) {
     posibleTiles.push_back(pixelVector.front());
     for (const auto& pixel : pixelVector)
         if (!Pixel::contienePixel(posibleTiles, pixel))
             posibleTiles.push_back(pixel);
 }
 //funcion para inicializar el mapa
-void initializePosMap(std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& posibleTiles, int Y) {
+void initialize_Map(std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& posibleTiles, int Y) {
     std::vector<int> tmp;
     unCollapseMap.clear();
     for (int i = 0; i < Y * Y; i++) {
@@ -516,28 +471,26 @@ bool mapCompleted(const std::vector<std::vector<int>>& unCollapseMap) {
     return true;
 }
 
+// g++ -O3 Main.cpp pattern.cpp HWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
+//./Main --mode "HWFC" --example "example.ppm" --desire_size 2 --top_size 8 --top_amount 1 --size 20 --amount 2
+
 int main(int argc, char* argv[]) {
-    std::vector<int> N;
-    std::vector<int> MN;
-    std::vector<int> HN;
-    std::string exampleMap, MetricMap;
+    std::vector<int> Desire_Size;
+    std::vector<int> Desire_Top_Size;
+    std::string Example_Map;
     std::string mode;
-    int Y, X, HN_i, serial_it_max, serial_it = 0;
-    int testPos;
+    int Map_Size, X, Top_Size_i, Map_Requested_i, Map_Requested_completed_i = 0;
 
     po::options_description desc("Opciones permitidas");
     desc.add_options()
         ("help", "Mostrar informaci�n de ayuda")
         ("mode", po::value<std::string>(&mode), "Ingresar modo del algoritmo: WFC, MWFC, HWFC")
-        ("LP", po::value<std::vector<int>>(&N)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
-        ("MP", po::value<std::vector<int>>(&MN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
-        ("HP", po::value<std::vector<int>>(&HN)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
-        ("HP_i", po::value<int>(&HN_i), "Ingresar iteraciones para patron alto")
-        ("example", po::value<std::string>(&exampleMap), "Ingresar nombre del archivo en formato .PPM")
-        ("size", po::value<int>(&Y), "Ingresar tamano de la imagen de salida")
-        ("test", po::value<int>(&testPos), "valor para ejecutar pruebas")
-        ("metric", po::value<std::string>(&MetricMap), "Ingresar nombre del archivo en formato .PPM")
-        ("serial_i", po::value<int>(&serial_it_max), "Ingresar iteraciones para patron alto");
+        ("example", po::value<std::string>(&Example_Map), "Ingresar nombre del archivo en formato .PPM")
+        ("desire_size", po::value<std::vector<int>>(&Desire_Size)->multitoken(), "Ingresar tamano de patrones a usar como valores enteros")
+        ("top_size", po::value<std::vector<int>>(&Desire_Top_Size)->multitoken(), "Ingresar tamano de patrones de jerarquia a usar como valores enteros")
+        ("top_amount", po::value<int>(&Top_Size_i), "Ingresar iteraciones para patron alto")
+        ("size", po::value<int>(&Map_Size), "Ingresar tamano de la imagen de salida")
+        ("amount", po::value<int>(&Map_Requested_i), "Ingresar iteraciones para patron alto");
     try {
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -547,68 +500,59 @@ int main(int argc, char* argv[]) {
             std::cout << desc << std::endl;
             return 1;
         }
+
         if (vm.count("mode")) {
             std::cout << "Variante del algoritmo a utilizar: " << mode << std::endl;
         }
         else {
             std::cout << "modo no valido." << std::endl;
         }
-        if (vm.count("LP")) {
-            std::cout << "Usar patrones de baja jerarquia: ";
-            for (int val : N) {
-                std::cout << val << " ";
-            }
-            std::cout << std::endl;
-        }
-        else {
-            std::cout << "Valores de patrones bajos no ingresados." << std::endl;
-        }
-        if (vm.count("MP")) {
-            std::cout << "Usar patrones de media jerarquia: ";
-            for (int val : HN) {
-                std::cout << val << " ";
-            }
-            std::cout << std::endl;
-        }
-        else {
-            std::cout << "Valores de patrones medianos no ingresados." << std::endl;
-        }
-        if (vm.count("HP")) {
-            std::cout << "Usar patrones de alta jerarquia: ";
-            for (int val : MN) {
-                std::cout << val << " ";
-            }
-            std::cout << std::endl;
-        }
-        else {
-            std::cout << "Valores de patrones altos no ingresados." << std::endl;
-        }
-        if (vm.count("HP_i")) {
-            std::cout << "iteraciones de alta jerarquia: " << HN_i << std::endl;
-        }
-        else {
-            std::cout << "Valores de patrones altos no ingresados." << std::endl;
-        }
+
         if (vm.count("example")) {
-            std::cout << "Valor de cadena ingresado: " << exampleMap << std::endl;
+            std::cout << "Valor de cadena ingresado: " << Example_Map << std::endl;
         }
         else {
             std::cout << "Valor de cadena no ingresado." << std::endl;
         }
+
+        if (vm.count("desire_size")) {
+            std::cout << "Usar patrones de baja jerarquia: ";
+            for (int val : Desire_Size) {
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones no ingresados." << std::endl;
+        }
+
+        if (vm.count("top_size")) {
+            std::cout << "Usar patrones de alta jerarquia: ";
+            for (int val : Desire_Top_Size) {
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones altos no ingresados." << std::endl;
+        }
+
+        if (vm.count("top_amount")) {
+            std::cout << "iteraciones de alta jerarquia: " << Top_Size_i << std::endl;
+        }
+        else {
+            std::cout << "Valores de patrones altos no ingresados." << std::endl;
+        }
+
         if (vm.count("size")) {
-            std::cout << "tamano imagen de salida: " << Y << std::endl;
+            std::cout << "tamano imagen de salida: " << Map_Size << std::endl;
         }
         else {
             std::cout << "Valor de tamano no ingresado." << std::endl;
         }
-        if (vm.count("metric")) {
-            std::cout << "Valor de cadena ingresado: " << MetricMap << std::endl;
-        }
-        else {
-            std::cout << "Valor de cadena no ingresado." << std::endl;
-        }
-        if (vm.count("serial_i")) {
-            std::cout << "iteracion serial: " << serial_it_max << std::endl;
+
+        if (vm.count("amount")) {
+            std::cout << "iteracion serial: " << Map_Requested_i << std::endl;
         }
         else {
             std::cout << " " << std::endl;
@@ -657,90 +601,97 @@ int main(int argc, char* argv[]) {
     }
 
     initializeRandomSeed();
-    size_t dotPos = exampleMap.find('.');
+
+    //transformar en función
+    size_t dotPos = Example_Map.find('.');
     std::string nameWithoutExt = "";
     if (dotPos != std::string::npos) {
         // Extraer la parte del nombre de archivo antes del punto
-        nameWithoutExt = exampleMap.substr(0, dotPos);
+        nameWithoutExt = Example_Map.substr(0, dotPos);
     }
-    std::string filename = "./" + exampleMap, PPM_Identifier; std::ifstream file(filename, std::ios::binary); int inputImageWidth, inputImageHeight;
-    std::string baseFolder = "generatedLevels/" + mode + "_" + nameWithoutExt + "_size_" + std::to_string(Y);
 
-    std::vector<Pixel> pixelVector, pixelVectorSalida, patterVectorSalida, PosibleTiles;
-    std::vector<std::vector<int>> unCollapseMap; std::vector<int> RPP, reserveRPP; RPP.resize(0); reserveRPP.resize(0);
+    std::string File_Name = "./" + Example_Map, PPM_Identifier; std::ifstream file(File_Name, std::ios::binary); int inputImageWidth, inputImageHeight;
+    std::string Base_Folder = "generatedLevels/" + mode + "_" + nameWithoutExt + "_size_" + std::to_string(Map_Size);
+
+
+    //variables para almacenar
+    std::vector<Pixel> Pixel_Vector, Pixel_Vector_Out, Pattern_Vector_Out, Posible_Tiles;
+    std::vector<std::vector<int>> Map_Uncollapse; std::vector<int> Propagation_Pos, reserveRPP; Propagation_Pos.resize(0); reserveRPP.resize(0);
+
+
+
+
 
     //lectura de la imagen de entrada
-    if (readImagePPM(exampleMap, inputImageWidth, inputImageHeight, pixelVector)) {
-        std::cout << "Imagen PPM leida exitosamente." << std::endl;
-    }
+    if (!readImagePPM(Example_Map, inputImageWidth, inputImageHeight, Pixel_Vector))
+        exit(0);
+    
+
+
 
     //defincion de las casillas
-    defineTiles(pixelVector, PosibleTiles);
+    define_Posible_Tiles(Pixel_Vector, Posible_Tiles);
 
-    initializePosMap(unCollapseMap, PosibleTiles, Y);
+    initialize_Map(Map_Uncollapse, Posible_Tiles, Map_Size);
+
     int lowestEntropyTilePos;
     //inicio del algoritmo WFC
     bool randomStart = true;
 
     //almacen de informaci�n para backtracking
-    std::vector<int> BT_pos; std::vector<std::vector<std::vector<int>>> BT_cMap; std::vector<std::vector<int>> BT_RPP;
-    int step = 0, backStep = 0, backtrackUses = 0, totalBacktracking = 0;
-    Pattern lastSelectedPattern(0, 0);
+    std::vector<std::vector<std::vector<int>>> BT_Map_Uncollapse; std::vector<std::vector<int>> BT_Propagation_Pos;
+    int BT_step = 0, backStep = 0, backtrackUses = 0, totalBacktracking = 0;
+    Pattern lastSelectedPattern(0,0);
 
-    std::vector<Pattern> patternArrayBase, patternArrayLow, patternArrayMid, patternArrayHigh, usedPatternArray;
+    std::vector<Pattern> patternArrayBase, patternArrayLow, patternArrayHigh, usedPatternArray;
 
     //DEFINICION DE LOS PATRONES
     if (mode == "WFC") {
-        //Patrones de un unico tama�o
         ControlString("Obtener patrones WFC");
-        definePatternsWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N[0]);
+        definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Size);
     }
     else {
         //Patrones de multiples tama�os
         ControlString("Obtener patrones MWFC");
-        definePatternsMWFC(patternArrayLow, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, N, false);
+        definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Size);
     }
     if (mode == "HWFC") {
-        //patrones de multiples tama�os para uso medio
-        ControlString("Obtener patrones medios HWFC");
-        definePatternsMWFC(patternArrayMid, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, MN, true);
         //patrones de multiples tama�os para uso alto
         ControlString("Obtener patrones altos HWFC");
-        definePatternsHWFC(patternArrayHigh, pixelVector, PosibleTiles, inputImageHeight, inputImageWidth, HN);
+        definePatternsHWFC(patternArrayHigh, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Top_Size);
     }
-    infoPatternUpdateID(patternArrayBase,patternArrayLow,patternArrayMid,patternArrayHigh);
+    infoPatternUpdateID(patternArrayBase,patternArrayLow,patternArrayHigh);
     
-    //inicio del algoritmo y generación del mapa
+    //inicio del algoritmo y generación de la cantidad de mapas solicitados
     do {
+
         //inicio de cronometro
         auto start = std::chrono::high_resolution_clock::now();
         std::cout << "Iniciando creacion de nuevo mapa." << std::endl;
 
         //EJECUCION DE JERARQUIA ALTA EN HWFC
         if (mode == "HWFC") {
-            //colapso de patrones de alta jerarquia iniciales
+            //definir patron de mayor tamaño sobre el cual iterar
             int HN_max = 0;
-            for (int i = 0; i < HN.size(); i++)
-                if (HN_max < HN[i])
-                    HN_max = HN[i];
-            //Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, 20, PosibleTiles.size(), false);
-            //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false);
+            for (int i = 0; i < Desire_Top_Size.size(); i++)
+                if (HN_max < Desire_Top_Size[i])
+                    HN_max = Desire_Top_Size[i];
 
-            for (int i = 0; i < HN_i; i++) {
+            for (int i = 0; i < Top_Size_i; i++) {
                 //busqueda y posicionamiento de patrones de alta jerarquia
                 do {
-                    lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
-                } while (!HPattValidTile(lowestEntropyTilePos, Y, Y, HN_max) && unCollapseMap[lowestEntropyTilePos].size() > 1);
+                    lowestEntropyTilePos = getRandom(0, Map_Uncollapse.size());
+                } while (!HPattValidTile(lowestEntropyTilePos, Map_Size, Map_Size, HN_max) && Map_Uncollapse[lowestEntropyTilePos].size() > 1);
 
-                if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), true, printMapBool)) {
+                if (Collapse(Map_Uncollapse, Propagation_Pos, reserveRPP, Map_Size, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, Posible_Tiles.size(), true, printMapBool)) {
                     //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, false, false);
                     
                     //Guardado de Backtracking
                     if (backtrackingActive) {
-                        if (RPP.size() > 0) {
-                            BT_cMap.push_back(unCollapseMap);
-                            BT_RPP.push_back(RPP);
-                            step++;
+                        if (Propagation_Pos.size() > 0) {
+                            BT_Map_Uncollapse.push_back(Map_Uncollapse);
+                            BT_Propagation_Pos.push_back(Propagation_Pos);
+                            BT_step++;
                         }
                     }
                 }
@@ -750,18 +701,18 @@ int main(int argc, char* argv[]) {
             bool condition = true;
             //colapso de patrones de tama�o mediano
             do {
-                lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
+                lowestEntropyTilePos = selectLowestEntropyTile(Map_Uncollapse, Posible_Tiles.size(), lowestEntropyTilePos, Propagation_Pos);
                 //std::cout << YELLOW << "Posicion con la entropia m�s baja: " << lowestEntropyTilePos << RESET << std::endl;
                 //std::cout << GREEN << "COLAPSAR mediano" << RESET << std::endl;
-                if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayMid, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false, printMapBool))
+                if (Collapse(Map_Uncollapse, Propagation_Pos, reserveRPP, Map_Size, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, Posible_Tiles.size(), false, printMapBool))
                 {
                     //Guardado de Backtracking
                     if (backtrackingActive) {
-                        if (RPP.size() > 0) {
-                            BT_cMap.push_back(unCollapseMap);
-                            BT_RPP.push_back(RPP);
+                        if (Propagation_Pos.size() > 0) {
+                            BT_Map_Uncollapse.push_back(Map_Uncollapse);
+                            BT_Propagation_Pos.push_back(Propagation_Pos);
                             usedPatternArray.push_back(lastSelectedPattern);
-                            step++;
+                            BT_step++;
                         }
                     }
                     else {
@@ -769,37 +720,37 @@ int main(int argc, char* argv[]) {
                     }
                     //printMapWithCollapseMark(unCollapseMap, lastSelectedPattern.coordinate, Y, PosibleTiles.size(), RPP, true, false);
                 }
-            } while (RPP.size() > 1);
+            } while (Propagation_Pos.size() > 1);
 
         }
         for (int i = 0; i < reserveRPP.size(); i++) {
-            RPP.push_back(reserveRPP[i]);
+            Propagation_Pos.push_back(reserveRPP[i]);
         }
         //searchForRPP(unCollapseMap, RPP);
-        std::sort(RPP.begin(), RPP.end());
-        RPP.erase(std::unique(RPP.begin(), RPP.end()), RPP.end());
+        std::sort(Propagation_Pos.begin(), Propagation_Pos.end());
+        Propagation_Pos.erase(std::unique(Propagation_Pos.begin(), Propagation_Pos.end()), Propagation_Pos.end());
         //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, true);
         //ControlPoint(0);
         //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         //std::exit(0);
         int controlPointN = 0;
 
-        while (!mapCompleted(unCollapseMap)) {
+        while (!mapCompleted(Map_Uncollapse)) {
             //std::cout << PURPLE << "step: " << step << RESET << std::endl;
             //seleccionar una casilla para colpasar
             //std::cout << GREEN << "SELECCIONAR " << RESET << std::endl;
             if (randomStart) {
-                lowestEntropyTilePos = getRandom(0, unCollapseMap.size());
+                lowestEntropyTilePos = getRandom(0, Map_Uncollapse.size());
                 randomStart = false;
                 //std::cout << YELLOW << "Posicion aleatoria: " << lowestEntropyTilePos << RESET << std::endl;
             }
             else {
-                lowestEntropyTilePos = selectLowestEntropyTile(unCollapseMap, PosibleTiles.size(), lowestEntropyTilePos, RPP);
+                lowestEntropyTilePos = selectLowestEntropyTile(Map_Uncollapse, Posible_Tiles.size(), lowestEntropyTilePos, Propagation_Pos);
                 //std::cout << YELLOW << "Posicion con la entropia m�s baja: " << lowestEntropyTilePos << RESET << std::endl;
             }
 
             //std::cout << GREEN << "COLAPSAR" << RESET << std::endl;
-            if (Collapse(unCollapseMap, RPP, reserveRPP, Y, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, PosibleTiles.size(), false, printMapBool)) {
+            if (Collapse(Map_Uncollapse, Propagation_Pos, reserveRPP, Map_Size, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, Posible_Tiles.size(), true, printMapBool)) {
                //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
                 //std::cout << " " << std::endl;
                 //std::cout << GREEN << "PROPAGAR" << RESET << std::endl;
@@ -808,37 +759,37 @@ int main(int argc, char* argv[]) {
                 
                 //Guardado de Backtracking
                 if (backtrackingActive) {
-                    if (RPP.size() > 0) {
-                        BT_cMap.push_back(unCollapseMap);
-                        BT_RPP.push_back(RPP);
+                    if (Propagation_Pos.size() > 0) {
+                        BT_Map_Uncollapse.push_back(Map_Uncollapse);
+                        BT_Propagation_Pos.push_back(Propagation_Pos);
                         usedPatternArray.push_back(lastSelectedPattern);
-                        step++;
+                        BT_step++;
                     }
                 }
                 else {
                     usedPatternArray.push_back(lastSelectedPattern);
                 }
             }
-            if (RPP.size() == 0 && !mapCompleted(unCollapseMap)) {
+            if (Propagation_Pos.size() == 0 && !mapCompleted(Map_Uncollapse)) {
                 if (backtrackingActive) {
-                    if (step - backtrackUses > 0) {
-                        step = step - backtrackUses;
-                        unCollapseMap = BT_cMap[step - 1];
-                        RPP = BT_RPP[step - 1];
-                        BT_cMap.resize(step - 1);
-                        BT_RPP.resize(step - 1);
-                        usedPatternArray.resize(step - 1);
+                    if (BT_step - backtrackUses > 0) {
+                        BT_step = BT_step - backtrackUses;
+                        Map_Uncollapse = BT_Map_Uncollapse[BT_step - 1];
+                        Propagation_Pos = BT_Propagation_Pos[BT_step - 1];
+                        BT_Map_Uncollapse.resize(BT_step - 1);
+                        BT_Propagation_Pos.resize(BT_step - 1);
+                        usedPatternArray.resize(BT_step - 1);
                         backtrackUses++;
                     }
                     else {
-                        initializePosMap(unCollapseMap, PosibleTiles, Y);
+                        initialize_Map(Map_Uncollapse, Posible_Tiles, Map_Size);
                         usedPatternArray.clear();
                         totalBacktracking += backtrackUses;
-                        step = 0;
+                        BT_step = 0;
                         backtrackUses = 0;
                     }
-                    if (RPP.size() == 0) {
-                        searchForRPP(unCollapseMap,RPP);
+                    if (Propagation_Pos.size() == 0) {
+                        searchForRPP(Map_Uncollapse,Propagation_Pos);
                     }
                 }            
                 else {
@@ -850,7 +801,7 @@ int main(int argc, char* argv[]) {
         }
 
 
-        if (mapCompleted(unCollapseMap)) {
+        if (mapCompleted(Map_Uncollapse)) {
             std::cout << GREEN << "MAPA COMPLETADO EXITOSAMENTE" << RESET << std::endl;
         
             //fin del cronometro del tiempo de ejecucion
@@ -858,7 +809,7 @@ int main(int argc, char* argv[]) {
             long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             totalBacktracking += backtrackUses;
 
-            printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, false);
+            printMap(Map_Uncollapse, Map_Size, Posible_Tiles.size(), Propagation_Pos, false);
 
             std::cout << "Tiempo de ejecucion: " << duration << " ms" << std::endl;
             std::cout << "usos del backtracking: " << totalBacktracking << std::endl;
@@ -867,7 +818,7 @@ int main(int argc, char* argv[]) {
             //KL Divergence
 
             //construccion de una nueva imagen
-            reconstructMap(pixelVectorSalida, unCollapseMap, PosibleTiles);
+            reconstructMap(Pixel_Vector_Out, Map_Uncollapse, Posible_Tiles);
             std::cout << "Mapa reconstruido exitosamente." << std::endl;
 
             //guardado de la imagen en un nuevo archivo
@@ -875,37 +826,36 @@ int main(int argc, char* argv[]) {
             // Metodo tamaño (numero de generacion)
             
             findUniquePattern(usedPatternArray);
-            size_t dotPos = exampleMap.find('.');
+            size_t dotPos = Example_Map.find('.');
             std::string nameWithoutExt = "";
             if (dotPos != std::string::npos) {
                 // Extraer la parte del nombre de archivo antes del punto
-                nameWithoutExt = exampleMap.substr(0, dotPos);
+                nameWithoutExt = Example_Map.substr(0, dotPos);
             }
             std::cout << "Guardando y procesando la informacion en archivos..." << std::endl;
 
-            SaveMapAndTime(baseFolder, pixelVectorSalida, usedPatternArray, mode + "_" + nameWithoutExt, Y, PosibleTiles, N, MN, HN, duration, backtrackUses);
+            SaveMapAndTime(Base_Folder, Pixel_Vector_Out, usedPatternArray, mode + "_" + nameWithoutExt, Map_Size, Posible_Tiles, duration, backtrackUses);
             std::cout << "Guardando completado." << std::endl;
             //dibujar los patrones en una imagen aparte
-            initializePosMap(unCollapseMap, PosibleTiles, Y);
-            serial_it++;
+            initialize_Map(Map_Uncollapse, Posible_Tiles, Map_Size);
+            Map_Requested_completed_i++;
         }
         
-        pixelVectorSalida.clear();
+        Pixel_Vector_Out.clear();
         usedPatternArray.clear();
-        RPP.clear();
-        BT_pos.clear();
-        BT_cMap.clear();
-        BT_RPP.clear();
+        Propagation_Pos.clear();
+        BT_Map_Uncollapse.clear();
+        BT_Propagation_Pos.clear();
         backtrackUses = 0;
         totalBacktracking = 0;
-        step = 0;
+        BT_step = 0;
         
 
-    }while (serial_it_max > serial_it);
+    }while (Map_Requested_i > Map_Requested_completed_i);
 
-    PerformMetrics(baseFolder, N, MN);
-    createPatternDraw(patternArrayLow, patterVectorSalida, Y);
-    if (writeImagePPM("patron_Generada.ppm", Y, Y, patterVectorSalida)) {
+    PerformMetrics(Base_Folder, Desire_Size);
+    createPatternDraw(patternArrayLow, Pattern_Vector_Out, Map_Size);
+    if (writeImagePPM("patron_Generada.ppm", Map_Size, Map_Size, Pattern_Vector_Out)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }
     

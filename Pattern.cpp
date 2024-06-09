@@ -2,7 +2,7 @@
 #include "Pattern.h"
 
     //constructor
-    Pattern::Pattern(int id, int N) : id(id), N(N) {}
+    Pattern::Pattern(int id, int N) : id(id),N(N) {}
     bool Pattern::comparePixelPattern(const std::vector<Pixel>& otherPixeles) {
 
         if (otherPixeles.size() != pixeles.size()) {

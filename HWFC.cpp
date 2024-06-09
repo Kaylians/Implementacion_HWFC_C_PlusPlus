@@ -1,4 +1,3 @@
-#include "MWFC.h"
 #include "WFC.h"
 #include "HWFC.h"
 #include "Main.h"
