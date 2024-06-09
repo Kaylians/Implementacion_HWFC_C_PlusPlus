@@ -1,6 +1,7 @@
 #include "Pixel.h"
 #include "Pattern.h"
 #include "Main.h"
+#include "DebugUtility.h"
 
 #include <iostream>
 #include <vector>

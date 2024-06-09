@@ -1,6 +1,15 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define WHITE    "\033[37m"
+#define PURPLE "\033[35m"
+#define CYAN "\033[36m"
+
 #include "Pattern.h"
 #include "Pixel.h"
 
@@ -15,9 +24,3 @@ void ControlPointNoText(int i);
 void ControlString(std::string text);
 void PrintPixelCoo(Pattern patt);
 #endif 
-
-
-/*
-   
-
-*/
