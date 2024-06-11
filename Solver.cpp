@@ -70,7 +70,7 @@ void searchForRPP(const std::vector<std::vector<int>>& unCollapseMap, std::vecto
 //funcion para colapsar una posicion a una patron en concreto que coincida por cada pixel con los valores adyacentes al punto
 
 //funciones para confirmar si el patron coincide en cada uno de sus puntos con el espacio alrededor del punto entregado
-bool selectPatternAnalizer(Pattern& pattern, const std::vector<std::vector<int>>& unCollapseMap, int posibleTilesN, const int N, const int Y, int pos, int i_min, int i_max, int j_min, int j_max) {
+bool selected_Pattern_Analizer(Pattern& pattern, const std::vector<std::vector<int>>& unCollapseMap, int posibleTilesN, const int N, const int Y, int pos, int i_min, int i_max, int j_min, int j_max) {
     bool contains = false;
     std::vector<int> mapCoo;
     int count = 0;
@@ -119,20 +119,21 @@ bool selectPatternAnalizer(Pattern& pattern, const std::vector<std::vector<int>>
     pattern.coordinate = mapCoo;
     return true;
 }
-bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos, int posibleTilesN, bool forceCenter) {
+
+bool select_Pattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std::vector<std::vector<int>>& unCollapseMap, const int N, const int Y, int pos, int posibleTilesN, bool forceCenter) {
     bool U = false, S = false, E = false, W = false, C = false, contains = false;
     //center, norte, sur, este , oeste
     if (N % 2 == 1)
         if (pos % Y >= (N / 2) && pos % Y < Y - (N / 2) && pos / Y >= (N / 2) && pos / Y < Y - (N / 2)) {
             if (forceCenter) {
                 for (int i = 0; i < pattArray.size(); i++) {
-                    if (selectPatternAnalizer(pattArray[i], unCollapseMap, posibleTilesN, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
+                    if (selected_Pattern_Analizer(pattArray[i], unCollapseMap, posibleTilesN, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
                         pattern = pattArray[i];
                         return true;
                     }
                 }
             }
-            else if (selectPatternAnalizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
+            else if (selected_Pattern_Analizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N / 2), (N / 2), -(N / 2), (N / 2))) {
                 return true;
             }
         }
@@ -152,14 +153,14 @@ bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std:
         for (int i = 0; i < N; i++) {
             if (W) {
                 for (int j = 0; j < N; j++) {
-                    if (selectPatternAnalizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N - 1), 0, -(N - 1), 0)) {
+                    if (selected_Pattern_Analizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N - 1), 0, -(N - 1), 0)) {
                         return true;
                     }
                 }
             }
             else if (E) {
                 for (int j = 0; j < N; j++) {
-                    if (selectPatternAnalizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N - 1), 0, 0, N - 1)) {
+                    if (selected_Pattern_Analizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, -(N - 1), 0, 0, N - 1)) {
                         return true;
                     }
                 }
@@ -170,14 +171,14 @@ bool selectPattern(Pattern& pattern, std::vector<Pattern>& pattArray, const std:
         for (int i = 0; i < N; i++) {
             if (W) {
                 for (int j = 0; j < N; j++) {
-                    if (selectPatternAnalizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, 0, N - 1, -(N - 1), 0)) {
+                    if (selected_Pattern_Analizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, 0, N - 1, -(N - 1), 0)) {
                         return true;
                     }
                 }
             }
             else if (E) {
                 for (int j = 0; j < N; j++) {
-                    if (selectPatternAnalizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, 0, N - 1, 0, N - 1)) {
+                    if (selected_Pattern_Analizer(pattern, unCollapseMap, posibleTilesN, N, Y, pos, 0, N - 1, 0, N - 1)) {
                         return true;
                     }
                 }
@@ -273,12 +274,14 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
                 }
                 return false;
             }
-            newPattern = pattern[getRandomPatternWeighted(pattern, 3)];
+            //newPattern = pattern[getRandomPatternWeighted(pattern, 3)];
+            newPattern = pattern[getRandom(0,pattern.size())];
             iterador = std::find(usedPatterns.begin(), usedPatterns.end(), newPattern.id);
+
         } while (iterador != usedPatterns.end());
         usedPatterns.push_back(newPattern.id);
 
-        if (selectPattern(newPattern, pattern, unCollapseMap, newPattern.N, Y, pos, posibleTilesN, false)) {
+        if (select_Pattern(newPattern, pattern, unCollapseMap, newPattern.N, Y, pos, posibleTilesN, false)) {
             finded = true;
         }
         else {
@@ -307,7 +310,8 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RP
     selectedPatt = newPattern;
 
     Propagate(unCollapseMap, RPP, Y, posibleTilesN);
-    printMap(unCollapseMap,Y,posibleTilesN,RPP,true);
+    if(printMapBool)
+        printMap(unCollapseMap,Y,posibleTilesN,RPP,true);
 
     return true;
 }
@@ -328,7 +332,6 @@ void generate_Map( std::string mode,
     int Top_Size_i,
     bool printMapBool,
     bool backtrackingActive,
-    std::vector<Pattern>& patternArrayBase,
     std::vector<Pattern>& patternArrayLow,
     std::vector<Pattern>& patternArrayHigh,
     std::string& Base_Folder,
@@ -366,9 +369,8 @@ void generate_Map( std::string mode,
             do {
                 lowestEntropyTilePos = getRandom(0, Map_Uncollapse.size());
             } while (!HPattValidTile(lowestEntropyTilePos, Map_Size, Map_Size, HN_max) && Map_Uncollapse[lowestEntropyTilePos].size() > 1);
-            ControlString("Activo 1");
             if (Collapse(Map_Uncollapse, Propagation_Pos, reserveRPP, Map_Size, patternArrayHigh, lastSelectedPattern, lowestEntropyTilePos, Posible_Tiles.size(), printMapBool)) {
-                ControlString("Activo 2");
+
                 //Guardado de Backtracking
                 if (backtrackingActive) {
                     if (Propagation_Pos.size() > 0) {
@@ -380,21 +382,16 @@ void generate_Map( std::string mode,
             }
             else i--;
         }
-        //stopExecute(2000, "patrones de media jerarquia...");
         bool condition = true;
+        randomStart = false;
 
     }
     for (int i = 0; i < reserveRPP.size(); i++) {
         Propagation_Pos.push_back(reserveRPP[i]);
     }
-    //searchForRPP(unCollapseMap, RPP);
+
     std::sort(Propagation_Pos.begin(), Propagation_Pos.end());
     Propagation_Pos.erase(std::unique(Propagation_Pos.begin(), Propagation_Pos.end()), Propagation_Pos.end());
-    //printMap(unCollapseMap, Y, PosibleTiles.size(), RPP, true);
-    //ControlPoint(0);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    //std::exit(0);
-    int controlPointN = 0;
 
     while (!mapCompleted(Map_Uncollapse)) {
         if (randomStart) {
@@ -406,7 +403,6 @@ void generate_Map( std::string mode,
         }
 
         if (Collapse(Map_Uncollapse, Propagation_Pos, reserveRPP, Map_Size, patternArrayLow, lastSelectedPattern, lowestEntropyTilePos, Posible_Tiles.size(), printMapBool)) {
-            Propagate(Map_Uncollapse, Propagation_Pos, Map_Size, Posible_Tiles.size());
             
             //Guardado de Backtracking
             if (backtrackingActive) {

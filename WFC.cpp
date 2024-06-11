@@ -127,9 +127,10 @@ void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>
     }
 
     std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
-}//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
-
-void infoPatternUpdateID(std::vector<Pattern>& pBase, std::vector<Pattern>& pLow, std::vector<Pattern>& pHigh) {
+}
+//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
+void infoPatternUpdateID(std::vector<Pattern>& pLow, std::vector<Pattern>& pHigh) {
+    std::vector<Pattern> pBase;
     pBase.reserve(pLow.size() + pHigh.size());
     pBase.insert(pBase.end(), pLow.begin(), pLow.end());
 

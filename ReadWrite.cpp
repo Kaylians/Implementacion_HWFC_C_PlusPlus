@@ -35,8 +35,246 @@ std::vector<Pixel> simpleHammingPPM(const std::string& exampleName) {
 
     return pixeles;
 }
+
+void getPredefineTiles(std::vector<Pixel>& posibleTiles) {
+
+    posibleTiles.emplace_back(0, 255, 0);       // Verde
+
+    posibleTiles.emplace_back(255, 0, 0);       // Rojo
+    posibleTiles.emplace_back(255, 0, 0);       // Rojo
+
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+
+    posibleTiles.emplace_back(255, 255, 255);   // Blanco
+    posibleTiles.emplace_back(255, 255, 255);   // Blanco
+    posibleTiles.emplace_back(255, 255, 255);   // Blanco
+    posibleTiles.emplace_back(255, 255, 255);   // Blanco
+
+    posibleTiles.emplace_back(255, 255, 0);     // Amarillo
+
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+
+    posibleTiles.emplace_back(255, 165, 0);     // Naranja
+
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+    posibleTiles.emplace_back(0, 0, 0);         // Negro
+
+    posibleTiles.emplace_back(128, 128, 128);   // Gris
+
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+    posibleTiles.emplace_back(139, 69, 19);     // Café
+
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+    posibleTiles.emplace_back(0, 0, 255);       // Azul
+}
+
+void findUniquePythonPattern(std::vector<Pattern>& pattArray) {
+    std::vector<Pattern> tmpPattArray;
+    int weight = 1;
+    for (int i = 0; i < pattArray.size(); i++) {
+        if (pattArray[i].pattern) {
+            for (int j = i + 1; j < pattArray.size(); j++) {
+                if (pattArray[j].N == pattArray[i].N) {
+                    if (pattArray[j].pattern && pattArray[i].compareCooPattern(pattArray[j].pixelesCoo)) {
+                        pattArray[j].pattern = false;
+                        weight++;
+                    }
+                }
+            }
+            pattArray[i].weight = weight;
+        }
+        weight = 1;
+    }
+    for (int i = 0; i < pattArray.size(); i++)
+        if (pattArray[i].pattern) {
+            tmpPattArray.push_back(pattArray[i]);
+            tmpPattArray[tmpPattArray.size() - 1].id = tmpPattArray.size() - 1;
+        }
+    pattArray.clear();
+    pattArray = tmpPattArray;
+}
+
+void infoPatternUpdateIDPython(std::vector<Pattern>& pLow, std::vector<Pattern>& pHigh) {
+    std::vector<Pattern> pBase;
+    pBase.reserve(pLow.size() + pHigh.size());
+    pBase.insert(pBase.end(), pLow.begin(), pLow.end());
+
+    if (pHigh.size() > 0)
+        pBase.insert(pBase.end(), pHigh.begin(), pHigh.end());
+    findUniquePythonPattern(pBase);
+
+    for (int i = 0; i < pHigh.size(); i++) {
+        for (int j = 0; j < pBase.size(); j++) {
+            if (pHigh[i].compareCooPattern(pBase[j].pixelesCoo)) {
+                pHigh[i].id = pBase[j].id;
+            }
+        }
+    }
+    for (int i = 0; i < pLow.size(); i++) {
+        for (int j = 0; j < pBase.size(); j++) {
+            if (pLow[i].compareCooPattern(pBase[j].pixelesCoo)) {
+                pLow[i].id = pBase[j].id;
+            }
+        }
+    }
+}
+
+void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern, std::vector<Pattern>& pattArray, const std::vector<Pixel>& posibleTiles, const int size, const std::vector<int>& desire_size) {
+    std::vector<Pixel> tmpVector;
+    std::vector<int> tmpCooVector;
+
+    //seperacion de la imagen en multiples patrones
+    //for (int y = 0; y <= inputImageHeight - N; y++)
+    int pos = 0;
+    for (int z = 0; z < desire_size.size(); z++) {
+        for (int y = 0; y <= size - desire_size[z]; y++) {
+            for (int x = 0; x <= size - desire_size[z]; x++) {
+                for (int i = 0; i < desire_size[z]; i++) {
+                    for (int j = 0; j < desire_size[z]; j++) {
+                        pos = (x + j + y * size + i * size);
+                        tmpCooVector.push_back(cooPixelPattern[pos]);
+                    }
+                }
+                Pattern newPattern(pattArray.size(), desire_size[z]);
+                newPattern.addPixelCooVector(tmpCooVector);
+                pattArray.push_back(newPattern);
+                tmpCooVector.clear();
+            }
+        }
+        //findUniquePattern(pattArray);
+        //makeMirroRotPattern(pattArray);
+        findUniquePythonPattern(pattArray);
+    }
+    std::cout << "Patrones base obtenidos de la imagen: " << pattArray.size() << std::endl;
+    std::sort(pattArray.begin(), pattArray.end(), comparePatternWFC);
+
+    for (int i = 0; i < pattArray.size(); i++) {
+        pattArray[i].id = i;
+    }
+
+    std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
+}
+
+//definicion  de las rutas usadas por los ejemplos de python
+void generate_File_Paths_Folder(std::vector<std::string>& TOP_HIERARCHIES, std::vector<std::string>& MID_HIERARCHIES, std::vector<std::string>& BASE_EXAMPLES) {
+
+
+    for (int j = 1; j <= 4; ++j) {
+        TOP_HIERARCHIES.push_back("examples/2.5D/top_1/Rot" + std::to_string(j) + ".txt");
+        TOP_HIERARCHIES.push_back("examples/2.5D/top_2/Rot" + std::to_string(j) + ".txt");
+    }
+
+    for (int i : {1, 2}) {
+        MID_HIERARCHIES.push_back("examples/2.5D/mid_" + std::to_string(i) + ".txt");
+    }
+
+    for (int i = 3; i <= 4; ++i) {
+        for (int j = 1; j <= 4; ++j) {
+            MID_HIERARCHIES.push_back("examples/2.5D/mid_" + std::to_string(i) + "/Rot" + std::to_string(j) + ".txt");
+        }
+    }
+
+    for (int i = 1; i <= 4; ++i) {
+        BASE_EXAMPLES.push_back("examples/2.5D/example_1/Rot" + std::to_string(i) + ".txt");
+        BASE_EXAMPLES.push_back("examples/2.5D/example_2/Rot" + std::to_string(i) + ".txt");
+    }
+
+}
+
+//obetener la información guardada en los .txt
+std::vector<std::vector<int>> readFiles(const std::vector<std::string>& filePaths) {
+    std::vector<std::vector<int>> allNumbers;
+
+    for (const std::string& filePath : filePaths) {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Could not open file: " << filePath << std::endl;
+            exit(0);
+        }
+        std::vector<int> numbers;
+        std::string line;
+        while (std::getline(file, line)) {
+            
+            std::stringstream ss(line);
+            std::string number;
+
+            while (std::getline(ss, number, ',')) {
+                try {
+                    // Eliminar espacios en blanco adicionales
+                    number.erase(remove_if(number.begin(), number.end(), ::isspace), number.end());
+                    if (!number.empty()) {
+                        numbers.push_back(std::stoi(number));
+                    }
+                }
+                catch (const std::invalid_argument& e) {
+                    std::cerr << "Invalid number in file " << filePath << ": " << number << std::endl;
+                }
+                catch (const std::out_of_range& e) {
+                    std::cerr << "Number out of range in file " << filePath << ": " << number << std::endl;
+                }
+            }
+
+            
+        }
+        allNumbers.push_back(numbers);
+        file.close();
+    }
+
+    return allNumbers;
+}
+
+//obtener la información de los patrones de python
+void read_Example_Folder(std::vector<Pattern>& patternArrayLow, std::vector<Pattern>& patternArrayHigh, std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size) {
+
+    std::vector<std::string> TOP_HIERARCHIES;
+    std::vector<std::string> MID_HIERARCHIES;
+    std::vector<std::string> BASE_EXAMPLES;
+    generate_File_Paths_Folder(TOP_HIERARCHIES, MID_HIERARCHIES, BASE_EXAMPLES);
+
+    // Leer los archivos y extraer los números
+    std::vector<std::vector<int>> top_Pattern = readFiles(TOP_HIERARCHIES);
+    std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
+    std::vector<std::vector<int>> low_Pattern = readFiles(BASE_EXAMPLES);
+
+    for (int i = 0; i < top_Pattern.size(); i++) {
+        Pattern newPattern(0, sqrt(top_Pattern[i].size()));
+        newPattern.addPixelCooVector(top_Pattern[i]);
+        newPattern.need_Predefine_Color = true;
+        patternArrayHigh.push_back(newPattern);
+
+    }
+    for (int i = 0; i < low_Pattern.size(); i++) {
+        definePatterns_PythonExamples(low_Pattern[i], patternArrayLow, posibleTiles, sqrt(low_Pattern[i].size()), desire_Size);
+    }
+    for (int i = 0; i < mid_Pattern.size(); i++) {
+        Pattern newPattern(0, sqrt(mid_Pattern[i].size()));
+        newPattern.addPixelCooVector(mid_Pattern[i]);
+        newPattern.need_Predefine_Color = true;
+        patternArrayLow.push_back(newPattern);
+
+    }
+}
+
 //funcion para la lectura de la imagen de ejemplo
-bool readImagePPM(const std::string& exampleName, int& w, int& h, std::vector<Pixel>& pixeles) {
+bool read_Example_PPM(const std::string& exampleName, int& w, int& h, std::vector<Pixel>& pixeles) {
     std::ifstream archivo(exampleName, std::ios::binary);
     if (!archivo.is_open()) {
         std::cerr << "Error al abrir el archivo: " << exampleName << std::endl;

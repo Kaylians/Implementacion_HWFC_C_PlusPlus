@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <chrono>
+#include <thread>
 #include <algorithm>
 
 bool SearchRPP(std::vector<int> RPP, int target) {
@@ -15,6 +17,20 @@ bool SearchRPP(std::vector<int> RPP, int target) {
         }
     }
     return false;
+}
+bool searchVectorInt(const std::vector<int>& vec, int value) {
+    auto iter = std::find(vec.begin(), vec.end(), value);
+    if (iter != vec.end()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+//funcion para detener la ejecucion
+void stopExecute(int times, std::string texto) {
+    ControlString(texto);
+    std::this_thread::sleep_for(std::chrono::milliseconds(times));
 }
 //funciona para imprimir el mapa que son valores int
 void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int posibi, std::vector<int>& RPP, bool MarkRPP) {
@@ -49,17 +65,17 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                 else if (unCollapseMap[j + i * size].size() == 1) {
                     if (unCollapseMap[j + i * size].front() < 10 && SearchRPP(RPP, j + i * size) && MarkRPP) {
                         if (unCollapseMap[j + i * size].front() == 0)
-                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 1)
-                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 2)
-                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE  << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 3)
-                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                         else if (unCollapseMap[j + i * size].front() == 4)
-                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                         else
-                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                            std::cout << PURPLE << unCollapseMap[j + i * size].front() << " " << RESET << "||";
                     }
                     else if (unCollapseMap[j + i * size].front() < 10) {
                         if (unCollapseMap[j + i * size].front() == 0)
@@ -78,7 +94,7 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                             std::cout << CYAN  << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
                     }
                     else {
-                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "*" << RESET << "||";
+                        std::cout << GREEN << unCollapseMap[j + i * size].front() << "" << RESET << "||";
                     }
                 }
                 else if (SearchRPP(RPP, j + i * size) && MarkRPP)

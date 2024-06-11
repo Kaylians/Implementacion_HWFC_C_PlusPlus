@@ -9,18 +9,24 @@
 #include <fstream>
 #include <vector>
 #include <filesystem>
-
+#include <cmath>
 #include <algorithm>
 #include <unordered_set>
 
 #include "Pixel.h"
 #include "Pattern.h"
+#include "WFC.h"
 #include "DebugUtility.h"
 
 namespace fs = std::filesystem;
 
+void getPredefineTiles(std::vector<Pixel>& posibleTiles);
+
+//Función para la lectura directa de .txt
+void read_Example_Folder(std::vector<Pattern>& patternArrayLow, std::vector<Pattern>& patternArrayHigh, std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size);
+
 // Función para la lectura de la imagen de ejemplo
-bool readImagePPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles);
+bool read_Example_PPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles);
 
 // Función para la escritura de una nueva imagen
 bool writeImagePPM(const std::string& r, int w, int h, const std::vector<Pixel>& pixeles);

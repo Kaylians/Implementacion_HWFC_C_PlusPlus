@@ -11,7 +11,7 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 //medir tiempo
 // Ejecuci�n: 
 // ./Main --mode "WFC" --LP 2 3 --example "example2.ppm" --size 10
-// ./Main --mode "HWFC" --LP 2 3 --MP 5 --HP 8 HP_i --example "example.ppm" --size 10 --metric --serial_i 100
+
 // gdb ./Main
 // r (argumento)
 // valgrind ./WFC
@@ -19,9 +19,11 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 // valgrind --tool=cachegrind ./WFC
 */
 
-// g++ - O3 Main.cpp pattern.cpp HWFC.cpp MWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp - o Main - lboost_program_options
 
-
+// g++ -O3 Main.cpp pattern.cpp HWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
+//
+// ./Main --mode "HWFC" --example "example.ppm" --desire_size 2 --top_size 8 --top_amount 1 --size 20 --amount 2
+// 
 // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
 
 
@@ -49,7 +51,6 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 #include "DebugUtility.h"
 #include "Metrics.h"
 #include "Solver.h"
-#include <thread>
 
 #include <boost/program_options.hpp>
 
@@ -60,22 +61,6 @@ void initializeRandomSeed() {
     std::srand(std::time(0));
 }
 
-//funcion para verificar si un vector contiene un valor int
-bool searchVectorInt(const std::vector<int>& vec, int value) {
-    auto iter = std::find(vec.begin(), vec.end(), value);
-    if (iter != vec.end()) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-//funcion para detener la ejecucion
-void stopExecute(int times, std::string texto) {
-    ControlString(texto);
-    std::this_thread::sleep_for(std::chrono::milliseconds(times));
-}
-
 //definir cuantas posibles estados puede tomar un pixel y cuantas veces aparece
 void define_Posible_Tiles(const std::vector<Pixel>& pixelVector, std::vector<Pixel>& posibleTiles) {
     posibleTiles.push_back(pixelVector.front());
@@ -84,73 +69,54 @@ void define_Posible_Tiles(const std::vector<Pixel>& pixelVector, std::vector<Pix
             posibleTiles.push_back(pixel);
 }
 
-//funcion para crear un mapa con los valores de los patrones candidatos para la propagacion
-void reduceMap(const std::vector<Pattern>& pattern, std::vector<std::vector<int>>& unCollapseMap, const int Y, int pos) {
-    for (int i = 0; i < pattern.size(); i++) {
-        for (int z = 0; z < pattern[i].coordinate.size(); z++) {
-            unCollapseMap[pattern[i].coordinate[z]].push_back(pattern[i].pixelesCoo[z]);
+std::string CutStringBeforeChar(std::string& string, const char pointer, const bool Cut_Before) {
+    size_t dotPos = string.find(pointer);
+    std::string nameWithoutExt = "";
+    if (Cut_Before) {
+        if (dotPos != std::string::npos) {
+            // Extraer la parte del nombre de archivo antes del punto
+            nameWithoutExt = string.substr(0, dotPos);
         }
     }
+    else {
+        if (dotPos != std::string::npos) {
+            // Extraer la parte del nombre de archivo antes del punto
+            nameWithoutExt = string.substr(dotPos, string.length());
+        }
+    }
+    
+    return nameWithoutExt;
 }
 
-//funcion para ver y guardar que patrones son compatibles alrededor de los posibles candidatos
-void propagate(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& RPP, std::vector<Pattern>& patternArray, int pos, const int Y) {
+void input_Boolean(bool& boolean, const std::string& Display) {
+    ControlString(Display);
+    int inputValue = -1;
+    do {
+        try {
+            std::cout << "[1 Si / 0 No]";
+            std::cin >> inputValue;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error, valor de ingreso no valido" << e.what() << std::endl;
+        }
 
-    //distancia de N + 1 para buscar posibles candidatos
-    std::vector<int> posiblePos = RPP;
-    std::vector<Pattern> propagationPattern;
-    std::vector<std::vector<int>> tmpUnCollapseMap;
-    int resize = Y * Y;
-    tmpUnCollapseMap.resize(resize);
-    auto newPattern = patternArray.front();
-    std::cout << "analizar patrones de RPP para propagacion" << std::endl;
-    for (int i = 0; i < posiblePos.size(); i++) {
-        propagationPattern.clear();
-        //std::cout << "RPP: " << posiblePos[i] << " /";
-        for (int j = 0; j < patternArray.size(); j++) {
-            //if (selectPattern(patternArray[j], patternArray, unCollapseMap, patternArray[j].N, Y, posiblePos[i], false)) 
-               // propagationPattern.push_back(patternArray[j]);
-            
-        }
-        //std::cout << "patrones compatibles obtenidos: " << propagationPattern.size() << std::endl;
-        if (propagationPattern.size() == 0) {
-            //std::cout << "eliminar posicion sin patrones:" << posiblePos[i] << std::endl;
-            auto it = std::find(RPP.begin(), RPP.end(), posiblePos[i]);
-            // Verificar si se encontr� el elemento
-            if (it != RPP.end()) {
-                RPP.erase(RPP.begin() + i);
-                //std::cout << "eliminacion exitosa" << std::endl;
-            }
-        }
-        else {
-            reduceMap(propagationPattern, tmpUnCollapseMap, Y, posiblePos[i]);
-        }
-    }
-    for (auto& e : tmpUnCollapseMap) {
-        std::sort(e.begin(), e.end());
-        auto it = std::unique(e.begin(), e.end());
-        e.erase(it, e.end());
-    }
-    for (int i = 0; i < unCollapseMap.size(); i++) {
-        if (tmpUnCollapseMap[i].size() > 1 && unCollapseMap[i].size() > 1) {
-            unCollapseMap[i] = tmpUnCollapseMap[i];
-        }
-    }
-    posiblePos.clear();
-    propagationPattern.clear();
-    tmpUnCollapseMap.clear();
+    } while (inputValue != 1 && inputValue != 0);
+
+    if (inputValue == 1) 
+        boolean = true;
+    else 
+        boolean = false;
 }
-
-
-// g++ -O3 Main.cpp pattern.cpp HWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
-//./Main --mode "HWFC" --example "example.ppm" --desire_size 2 --top_size 8 --top_amount 1 --size 20 --amount 2
 
 int main(int argc, char* argv[]) {
     std::vector<int> Desire_Size;
     std::vector<int> Desire_Top_Size;
     std::string Example_Map;
     std::string mode;
-    int Map_Size, X, Top_Size_i, Map_Requested_i, Map_Requested_completed_i = 0;
+    int Map_Size, X, Top_Size_i, Map_Requested_i, Map_Requested_completed_i = 0, Image_Width, Image_Height;
+
+    //variables de almacenamiento de pixeles
+    std::vector<Pixel> Pixel_Vector, Pixel_Vector_Out, Pattern_Vector_Out, Posible_Tiles;
 
     po::options_description desc("Opciones permitidas");
     desc.add_options()
@@ -234,117 +200,66 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error al analizar las opciones: " << e.what() << std::endl;
         return 1;
     }
-    int inputValue = -1;
-    do {
-        try {
-            std::cout << "Usar backtracking? [1 Si / 0 No]";
-            std::cin >> inputValue;
-        }
-        catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-        
-    } while (inputValue != 1 && inputValue != 0);
-    bool backtrackingActive;
-    if (inputValue == 1) {
-        backtrackingActive = true;
-    }
-    else {
-        backtrackingActive = false;
-    }
-    int inputValueMap = -1;
-    do {
-        try {
-            std::cout << "Imprimir mapa? [1 Si / 0 No]";
-            std::cin >> inputValueMap;
-        }
-        catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-
-    } while (inputValueMap != 1 && inputValueMap != 0);
-    bool printMapBool;
-    if (inputValueMap == 1) {
-        printMapBool = true;
-    }
-    else {
-        printMapBool = false;
-    }
 
     initializeRandomSeed();
 
-    //transformar en función
-    size_t dotPos = Example_Map.find('.');
-    std::string nameWithoutExt = "";
-    if (dotPos != std::string::npos) {
-        // Extraer la parte del nombre de archivo antes del punto
-        nameWithoutExt = Example_Map.substr(0, dotPos);
+    bool backtrackingActive, printMapBool;
+    input_Boolean(backtrackingActive, "Usar backtracking ?");
+    input_Boolean(printMapBool, "Imprimir el mapa en la generación ?");
+
+    std::string Output_Folder = "generatedLevels/" + mode + "_size_" + std::to_string(Map_Size);
+
+    //lectura de imagenes de ejemplo como entrada de datos
+    //use de los mismos parametros de la implementacion de python
+    std::vector<Pattern> patternArrayLow, patternArrayHigh;
+    if (Example_Map == "folder") {
+        getPredefineTiles(Posible_Tiles);
+        read_Example_Folder(patternArrayLow, patternArrayHigh,Posible_Tiles,Desire_Size);
+        infoPatternUpdateIDPython(patternArrayLow, patternArrayHigh);
+    }
+    //uso de imagen .ppm como ejemplo
+    else { 
+        if (!read_Example_PPM(Example_Map, Image_Width, Image_Height, Pixel_Vector))
+            exit(0);
+        //defincion de las casillas
+        define_Posible_Tiles(Pixel_Vector, Posible_Tiles);
+
+        //DEFINICION DE LOS PATRONES
+        if (mode == "WFC") {
+            ControlString("Obtener patrones WFC");
+            definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Size);
+        }
+        else {
+            //Patrones de multiples tama�os
+            ControlString("Obtener patrones MWFC");
+            definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Size);
+        }
+        if (mode == "HWFC") {
+            //patrones de multiples tama�os para uso alto
+            ControlString("Obtener patrones altos HWFC");
+            definePatternsHWFC(patternArrayHigh, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Top_Size);
+        }
+        infoPatternUpdateID(patternArrayLow, patternArrayHigh);
     }
 
-    std::string File_Name = "./" + Example_Map, PPM_Identifier; std::ifstream file(File_Name, std::ios::binary); int inputImageWidth, inputImageHeight;
-    std::string Base_Folder = "generatedLevels/" + mode + "_" + nameWithoutExt + "_size_" + std::to_string(Map_Size);
-
-
-    //variables para almacenar
-    std::vector<Pixel> Pixel_Vector, Pixel_Vector_Out, Pattern_Vector_Out, Posible_Tiles;
-    
-
-
-
-
-
-    //lectura de la imagen de entrada
-    if (!readImagePPM(Example_Map, inputImageWidth, inputImageHeight, Pixel_Vector))
-        exit(0);
-    
-
-
-
-    //defincion de las casillas
-    define_Posible_Tiles(Pixel_Vector, Posible_Tiles);
-    
-    //inicio del algoritmo WFC
-
-
-
-
-    std::vector<Pattern> patternArrayBase, patternArrayLow, patternArrayHigh;
-
-    //DEFINICION DE LOS PATRONES
-    if (mode == "WFC") {
-        ControlString("Obtener patrones WFC");
-        definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Size);
-    }
-    else {
-        //Patrones de multiples tama�os
-        ControlString("Obtener patrones MWFC");
-        definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Size);
-    }
-    if (mode == "HWFC") {
-        //patrones de multiples tama�os para uso alto
-        ControlString("Obtener patrones altos HWFC");
-        definePatternsHWFC(patternArrayHigh, Pixel_Vector, Posible_Tiles, inputImageHeight, inputImageWidth, Desire_Top_Size);
-    }
-    infoPatternUpdateID(patternArrayBase,patternArrayLow,patternArrayHigh);
-    
     //inicio del algoritmo y generación de la cantidad de mapas solicitados
     do {
 
         //inicio de cronometro
         
 
-        generate_Map(mode, Desire_Top_Size,Posible_Tiles,Map_Size,Top_Size_i,printMapBool,backtrackingActive,patternArrayBase,patternArrayLow,patternArrayHigh,Base_Folder,Example_Map);
+        generate_Map(mode, Desire_Top_Size,Posible_Tiles,Map_Size,Top_Size_i,printMapBool,backtrackingActive,patternArrayLow,patternArrayHigh,Output_Folder,Example_Map);
 
         Map_Requested_completed_i++;
        
     }while (Map_Requested_i > Map_Requested_completed_i);
 
-    PerformMetrics(Base_Folder, Desire_Size);
-    createPatternDraw(patternArrayLow, Pattern_Vector_Out, Map_Size);
+    PerformMetrics(Output_Folder, Desire_Size);
+    //createPatternDraw(patternArrayLow, Pattern_Vector_Out, Map_Size);
+    /*
     if (writeImagePPM("patron_Generada.ppm", Map_Size, Map_Size, Pattern_Vector_Out)) {
         std::cout << "Imagen PPM escrita exitosamente." << std::endl;
     }
-    
-
+    */
     return 0;
 }
