@@ -9,8 +9,10 @@ class Pattern {
 public:
     int id;
     int N;
-    int weight;
+    int hierarchy_Level = -1;
+    int weight = 1;
     bool pattern = true;
+    bool midPattern = false;
     bool highPattern = false;
     bool need_Predefine_Color = false;
     std::vector<Pixel> pixeles;

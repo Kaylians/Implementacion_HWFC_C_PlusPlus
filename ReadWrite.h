@@ -23,7 +23,9 @@ namespace fs = std::filesystem;
 void getPredefineTiles(std::vector<Pixel>& posibleTiles);
 
 //Función para la lectura directa de .txt
-void read_Example_Folder(std::vector<Pattern>& patternArrayLow, std::vector<Pattern>& patternArrayHigh, std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size);
+void read_Example_Folder(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size);
+
+void infoPatternUpdateIDPython(std::vector<std::vector<Pattern>>& H_patternArray);
 
 // Función para la lectura de la imagen de ejemplo
 bool read_Example_PPM(const std::string& r, int& w, int& h, std::vector<Pixel>& pixeles);

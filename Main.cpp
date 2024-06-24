@@ -20,7 +20,7 @@ ver distancia entre patrones, quizas con el punto inicial de donde estaban en el
 */
 
 
-// g++ -O3 Main.cpp pattern.cpp HWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
+// g++ -O3 Main.cpp Solver.cpp pattern.cpp HWFC.cpp WFC.cpp DebugUtility.cpp ReadWrite.cpp Metrics.cpp -o Main -lboost_program_options
 //
 // ./Main --mode "HWFC" --example "example.ppm" --desire_size 2 --top_size 8 --top_amount 1 --size 20 --amount 2
 // 
@@ -209,13 +209,29 @@ int main(int argc, char* argv[]) {
 
     std::string Output_Folder = "generatedLevels/" + mode + "_size_" + std::to_string(Map_Size);
 
-    //lectura de imagenes de ejemplo como entrada de datos
-    //use de los mismos parametros de la implementacion de python
+
+
     std::vector<Pattern> patternArrayLow, patternArrayHigh;
+    std::vector<std::vector<Pattern>> H_patternArray;
+    std::sort(Desire_Size.begin(), Desire_Size.end(), std::greater<int>());
+
+    if (mode == "WFC") {
+        std::vector<int> fix_desire_size;
+        fix_desire_size.push_back(Desire_Size[0]);
+        Desire_Size = fix_desire_size;
+        fix_desire_size.clear();
+    }
+
     if (Example_Map == "folder") {
         getPredefineTiles(Posible_Tiles);
-        read_Example_Folder(patternArrayLow, patternArrayHigh,Posible_Tiles,Desire_Size);
-        infoPatternUpdateIDPython(patternArrayLow, patternArrayHigh);
+        read_Example_Folder(mode, H_patternArray, Posible_Tiles, Desire_Size);
+        infoPatternUpdateIDPython(H_patternArray);
+        //inicio del algoritmo y generación de la cantidad de mapas solicitados
+        do {
+            if (generate_Map(mode,Desire_Top_Size, Desire_Size, Posible_Tiles, Map_Size, Top_Size_i, printMapBool, backtrackingActive, H_patternArray, Output_Folder, Example_Map)) {
+                Map_Requested_completed_i++;
+            }
+        } while (Map_Requested_i > Map_Requested_completed_i);
     }
     //uso de imagen .ppm como ejemplo
     else { 
@@ -240,19 +256,14 @@ int main(int argc, char* argv[]) {
             definePatternsHWFC(patternArrayHigh, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Top_Size);
         }
         infoPatternUpdateID(patternArrayLow, patternArrayHigh);
+        //inicio del algoritmo y generación de la cantidad de mapas solicitados
+        do {
+            ControlString("version original no funcional, se requiere cambiar a uso de H_PatterArray");
+        } while (Map_Requested_i > Map_Requested_completed_i);
     }
 
-    //inicio del algoritmo y generación de la cantidad de mapas solicitados
-    do {
-
-        //inicio de cronometro
-        
-
-        generate_Map(mode, Desire_Top_Size,Posible_Tiles,Map_Size,Top_Size_i,printMapBool,backtrackingActive,patternArrayLow,patternArrayHigh,Output_Folder,Example_Map);
-
-        Map_Requested_completed_i++;
-       
-    }while (Map_Requested_i > Map_Requested_completed_i);
+    
+    
 
     PerformMetrics(Output_Folder, Desire_Size);
     //createPatternDraw(patternArrayLow, Pattern_Vector_Out, Map_Size);

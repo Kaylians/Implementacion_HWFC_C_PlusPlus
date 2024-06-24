@@ -16,17 +16,17 @@
 #include <chrono>
 #include <random>
 
-void generate_Map( std::string mode,
+bool generate_Map( std::string mode,
      std::vector<int>& Desire_Top_Size,
+    std::vector<int>& Desire_Size,
      std::vector<Pixel>& Posible_Tiles,
      int Map_Size,
      int Top_Size_i,
      bool printMapBool,
      bool backtrackingActive,
-     std::vector<Pattern>& patternArrayLow,
-     std::vector<Pattern>& patternArrayHigh,
-    std::string& Base_Folder,
-    std::string& Example_Map
+     std::vector<std::vector<Pattern>>& H_patternArray,
+     std::string& Base_Folder,
+     std::string& Example_Map
 );
 
 #endif 

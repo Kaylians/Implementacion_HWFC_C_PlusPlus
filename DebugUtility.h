@@ -10,6 +10,11 @@
 #define PURPLE "\033[35m"
 #define CYAN "\033[36m"
 
+#define DGRAY    "\033[90m" 
+#define GRAY "\033[97m"
+#define BROWN "\033[38;5;94m"  // Approximated brown (often used as a replacement)
+#define ORANGE "\033[38;5;214m"
+
 #include "Pattern.h"
 #include "Pixel.h"
 

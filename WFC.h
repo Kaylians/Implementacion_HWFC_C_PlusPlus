@@ -12,5 +12,5 @@ void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>
 void findUniquePattern(std::vector<Pattern>& pattArray);
 void makeMirroRotPattern(std::vector<Pattern>& pattArray);
 void infoPatternUpdateID(std::vector<Pattern>& pattern, std::vector<Pattern>& pHigh);
-void infoPatternUpdateIDPython(std::vector<Pattern>& pattern, std::vector<Pattern>& pHigh);
+
 #endif 
