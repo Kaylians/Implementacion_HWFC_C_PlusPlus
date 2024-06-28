@@ -61,7 +61,6 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                         std::cout << BLUE << i << RESET << "||";
                     }
                 }
-                
                 else if (unCollapseMap[j + i * size].size() == 1) {
                     if (SearchRPP(RPP, j + i * size) && MarkRPP) {
                         if (unCollapseMap[j + i * size].front() > 9)
