@@ -114,6 +114,43 @@ void findUniquePythonPattern(std::vector<Pattern>& pattArray) {
     pattArray.clear();
     pattArray = tmpPattArray;
 }
+void makeMirroRotPythonPattern(std::vector<Pattern>& pattArray) {
+    std::vector<Pattern> tmpPattArray, finalPattArray;
+    std::vector<int> tmpCooVector;
+
+
+    for (int i = 0; i < pattArray.size(); i++) {
+        tmpCooVector = pattArray[i].pixelesCoo;
+        finalPattArray.push_back(pattArray[i]);
+        for (int j = 0; j < 4; j++) {
+            if (j == 0) {
+                //añadir espejo del patron inicial
+                Pattern newPatternMirror(tmpPattArray.size(), pattArray[i].N);
+                newPatternMirror.addPixelCooVector(newPatternMirror.mirrorPatternCoo(tmpCooVector));
+                tmpPattArray.push_back(newPatternMirror);
+                finalPattArray.push_back(tmpPattArray.back());
+                tmpPattArray.clear();
+            }
+            else {
+                //añdir rotacion del patron base
+                Pattern newPatternRot(tmpPattArray.size(), pattArray[i].N);
+                tmpCooVector = newPatternRot.rotatePatternCoo(tmpCooVector);
+                newPatternRot.addPixelCooVector(tmpCooVector);
+                tmpPattArray.push_back(newPatternRot);
+                finalPattArray.push_back(tmpPattArray.back());
+                tmpPattArray.clear();
+                //rot espejo de la rotacion
+                Pattern newPatternRotMirror(tmpPattArray.size(), pattArray[i].N);
+                newPatternRotMirror.addPixelCooVector(newPatternRotMirror.mirrorPatternCoo(tmpCooVector));
+                tmpPattArray.push_back(newPatternRotMirror);
+                finalPattArray.push_back(tmpPattArray.back());
+                tmpPattArray.clear();
+            }
+        }
+    }
+    pattArray.clear();
+    pattArray = finalPattArray;
+}
 
 void infoPatternUpdateIDPython(std::vector<std::vector<Pattern>>& H_patternArray) {
     int id = 0;
@@ -151,8 +188,8 @@ void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::
                 tmpCooVector.clear();
             }
         }
-        //findUniquePattern(pattArray);
-        //makeMirroRotPattern(pattArray);
+        findUniquePythonPattern(pattArray);
+        makeMirroRotPythonPattern(pattArray);
         findUniquePythonPattern(pattArray);
         for (int a = 0; a < pattArray.size(); a++)
             H_patternArray[H_patternArray.size()-desire_size.size() + z].push_back(pattArray[a]);
@@ -228,13 +265,14 @@ std::vector<std::vector<int>> readFiles(const std::vector<std::string>& filePath
     return allNumbers;
 }
 
-void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std::vector<std::vector<int>>& patterns) {
+void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std::vector<std::vector<int>>& patterns, bool is_high_pattern) {
     std::vector<Pattern> tmp_patternArray;
 
     for (int i = 0; i < patterns.size(); i++) {
         Pattern newPattern(0, sqrt(patterns[i].size()));
         newPattern.addPixelCooVector(patterns[i]);
         newPattern.need_Predefine_Color = true;
+        newPattern.highPattern = is_high_pattern;
         tmp_patternArray.push_back(newPattern);
     }
     H_patternArray.push_back(tmp_patternArray);
@@ -254,8 +292,8 @@ void read_Example_Folder(const std::string& mode, std::vector<std::vector<Patter
         std::vector<std::vector<int>> top_Pattern = readFiles(TOP_HIERARCHIES);
         std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
         H_patternArray.reserve(2 + desire_Size.size());
-        load_H_patternArray(H_patternArray, top_Pattern);
-        load_H_patternArray(H_patternArray, mid_Pattern);
+        load_H_patternArray(H_patternArray, top_Pattern, true);
+        load_H_patternArray(H_patternArray, mid_Pattern, false);
 
         int resize = H_patternArray.size() + desire_Size.size();
         H_patternArray.resize(resize);
