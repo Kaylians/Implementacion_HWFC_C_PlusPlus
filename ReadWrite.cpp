@@ -39,51 +39,52 @@ std::vector<Pixel> simpleHammingPPM(const std::string& exampleName) {
 void getPredefineTiles(std::vector<Pixel>& posibleTiles) {
 
     posibleTiles.emplace_back(0, 255, 0);       // Verde
-
+    //0
     posibleTiles.emplace_back(255, 0, 0);       // Rojo
     posibleTiles.emplace_back(255, 0, 0);       // Rojo
-
+    //2
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
-
+    //6
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
-
+    //10
     posibleTiles.emplace_back(255, 255, 255);   // Blanco
     posibleTiles.emplace_back(255, 255, 255);   // Blanco
     posibleTiles.emplace_back(255, 255, 255);   // Blanco
     posibleTiles.emplace_back(255, 255, 255);   // Blanco
-
+    //14
     posibleTiles.emplace_back(255, 255, 0);     // Amarillo
-
+    //15
     posibleTiles.emplace_back(0, 0, 255);       // Azul
     posibleTiles.emplace_back(0, 0, 255);       // Azul
-
+    //17
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
-
+    //19
     posibleTiles.emplace_back(255, 165, 0);     // Naranja
-
+    //20
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
     posibleTiles.emplace_back(0, 0, 0);         // Negro
-
+    //24
     posibleTiles.emplace_back(128, 128, 128);   // Gris
-
+    //25
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
     posibleTiles.emplace_back(139, 69, 19);     // Café
-
+    //29
     posibleTiles.emplace_back(0, 0, 255);       // Azul
     posibleTiles.emplace_back(0, 0, 255);       // Azul
     posibleTiles.emplace_back(0, 0, 255);       // Azul
     posibleTiles.emplace_back(0, 0, 255);       // Azul
+    //33
 }
 
 void findUniquePythonPattern(std::vector<Pattern>& pattArray) {
@@ -114,6 +115,7 @@ void findUniquePythonPattern(std::vector<Pattern>& pattArray) {
     pattArray.clear();
     pattArray = tmpPattArray;
 }
+
 void makeMirroRotPythonPattern(std::vector<Pattern>& pattArray) {
     std::vector<Pattern> tmpPattArray, finalPattArray;
     std::vector<int> tmpCooVector;
@@ -188,8 +190,8 @@ void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::
                 tmpCooVector.clear();
             }
         }
-        findUniquePythonPattern(pattArray);
-        makeMirroRotPythonPattern(pattArray);
+        //findUniquePythonPattern(pattArray);
+        //makeMirroRotPythonPattern(pattArray);
         findUniquePythonPattern(pattArray);
         for (int a = 0; a < pattArray.size(); a++)
             H_patternArray[H_patternArray.size()-desire_size.size() + z].push_back(pattArray[a]);
@@ -293,7 +295,7 @@ void read_Example_Folder(const std::string& mode, std::vector<std::vector<Patter
         std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
         H_patternArray.reserve(2 + desire_Size.size());
         load_H_patternArray(H_patternArray, top_Pattern, true);
-        load_H_patternArray(H_patternArray, mid_Pattern, false);
+        load_H_patternArray(H_patternArray, mid_Pattern, true);
 
         int resize = H_patternArray.size() + desire_Size.size();
         H_patternArray.resize(resize);
