@@ -275,6 +275,8 @@ void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std:
         newPattern.addPixelCooVector(patterns[i]);
         newPattern.need_Predefine_Color = true;
         newPattern.highPattern = is_high_pattern;
+        newPattern.id = tmp_patternArray.size();
+        newPattern.weight = 1;
         tmp_patternArray.push_back(newPattern);
     }
     H_patternArray.push_back(tmp_patternArray);
