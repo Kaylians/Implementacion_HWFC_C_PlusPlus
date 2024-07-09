@@ -93,14 +93,14 @@ void input_Boolean(bool& boolean, const std::string& Display) {
     int inputValue = -1;
     do {
         try {
-            std::cout << "[1 Si / 0 No]";
+            std::cout << "[1 Si / 2 No]";
             std::cin >> inputValue;
         }
         catch (const std::exception& e) {
             std::cerr << "Error, valor de ingreso no valido" << e.what() << std::endl;
         }
 
-    } while (inputValue != 1 && inputValue != 0);
+    } while (inputValue != 1 && inputValue != 2);
 
     if (inputValue == 1) 
         boolean = true;
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
     std::vector<int> Desire_Top_Size;
     std::string Example_Map;
     std::string mode;
-    int Map_Size, X, Top_Size_i, Map_Requested_i, Map_Requested_completed_i = 0, Image_Width, Image_Height;
+    int Map_Size = 20, Top_Size_i = 10, Map_Requested_i = 1, Map_Requested_completed_i = 0, Image_Width, Image_Height;
 
     //variables de almacenamiento de pixeles
     std::vector<Pixel> Pixel_Vector, Pixel_Vector_Out, Pattern_Vector_Out, Posible_Tiles;
@@ -200,16 +200,15 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error al analizar las opciones: " << e.what() << std::endl;
         return 1;
     }
-
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     initializeRandomSeed();
 
-    bool backtrackingActive, printMapBool;
-    input_Boolean(backtrackingActive, "Usar backtracking ?");
+    bool backtrackingActive = true, printMapBool;
+    //input_Boolean(backtrackingActive, "Usar backtracking ?");
     input_Boolean(printMapBool, "Imprimir el mapa en la generación ?");
 
     std::string Output_Folder = "generatedLevels/" + mode + "_size_" + std::to_string(Map_Size);
-
-
 
     std::vector<Pattern> patternArrayLow, patternArrayHigh;
     std::vector<std::vector<Pattern>> H_patternArray;
@@ -227,8 +226,10 @@ int main(int argc, char* argv[]) {
         read_Example_Folder(mode, H_patternArray, Posible_Tiles, Desire_Size);
         infoPatternUpdateIDPython(H_patternArray);
         //inicio del algoritmo y generación de la cantidad de mapas solicitados
+
+        long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         do {
-            if (generate_Map(mode,Desire_Top_Size, Desire_Size, Posible_Tiles, Map_Size, Top_Size_i, printMapBool, backtrackingActive, H_patternArray, Output_Folder, Example_Map)) {
+            if (generate_Map(mode,Desire_Top_Size, Desire_Size, Posible_Tiles, Map_Size, Top_Size_i, printMapBool, backtrackingActive, H_patternArray, Output_Folder, Example_Map, duration)) {
                 Map_Requested_completed_i++;
             }
         } while (Map_Requested_i > Map_Requested_completed_i);
@@ -257,20 +258,15 @@ int main(int argc, char* argv[]) {
         }
         infoPatternUpdateID(patternArrayLow, patternArrayHigh);
         //inicio del algoritmo y generación de la cantidad de mapas solicitados
+        long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         do {
-            ControlString("version original no funcional, se requiere cambiar a uso de H_PatterArray");
+            if (generate_Map(mode, Desire_Top_Size, Desire_Size, Posible_Tiles, Map_Size, Top_Size_i, printMapBool, backtrackingActive, H_patternArray, Output_Folder, Example_Map, duration)) {
+                Map_Requested_completed_i++;
+            }
         } while (Map_Requested_i > Map_Requested_completed_i);
     }
 
-    
-    
-
     PerformMetrics(Output_Folder, Desire_Size);
-    //createPatternDraw(patternArrayLow, Pattern_Vector_Out, Map_Size);
-    /*
-    if (writeImagePPM("patron_Generada.ppm", Map_Size, Map_Size, Pattern_Vector_Out)) {
-        std::cout << "Imagen PPM escrita exitosamente." << std::endl;
-    }
-    */
+
     return 0;
 }

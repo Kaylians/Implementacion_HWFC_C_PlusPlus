@@ -13,7 +13,29 @@
 bool comparePatternWFC(const Pattern& a, const Pattern& b) {
     return a.weight > b.weight;
 }
-
+void findUniquePatternCSV(std::vector<Pattern>& pattArray) {
+    std::vector<Pattern> tmpPattArray;
+    int weight = 1;
+    for (int i = 0; i < pattArray.size(); i++) {
+        if (pattArray[i].pattern) {
+            for (int j = i + 1; j < pattArray.size(); j++) {
+                if (pattArray[j].N == pattArray[i].N) {
+                    if (pattArray[j].pattern && pattArray[i].compareCooPattern(pattArray[j].pixelesCoo)) {
+                        pattArray[j].pattern = false;
+                        weight++;
+                    }
+                }
+            }
+            pattArray[i].weight = weight;
+        }
+        weight = 1;
+    }
+    for (int i = 0; i < pattArray.size(); i++) {
+        if (pattArray[i].pattern)
+            tmpPattArray.push_back(pattArray[i]);
+    }
+    pattArray = tmpPattArray;
+}
 void findUniquePattern(std::vector<Pattern>& pattArray) {
     std::vector<Pattern> tmpPattArray;
     int weight = 1;

@@ -524,14 +524,26 @@ bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string
     fileName = nombreUnico;
     std::string rutaArchivo = carpetaBase + "/" + nombreUnico;
     std::ofstream archivo(rutaArchivo, std::ios::binary);
-    
+
     if (archivo.is_open()) {
         for (const Pattern& pat : dataPattern) {
+            
             archivo << pat.N << ";";
             archivo << pat.weight << ";";
             for (int i = 0; i < pat.pixelesCoo.size(); i++) {
                 archivo << pat.pixelesCoo[i] << ";";
             }
+            /*
+            std::ostringstream oss;
+            for (size_t i = 0; i < pat.pixelesCoo.size(); ++i) {
+                oss << std::to_string(pat.pixelesCoo[i]);
+                if (i != pat.pixelesCoo.size() - 1) { // Añadir una coma excepto después del último elemento
+                    oss << ",";
+                }
+            }
+            std::string result = oss.str();
+            archivo << result << ";";
+            */
             archivo << "\n";
         }
         archivo.close();
@@ -671,10 +683,8 @@ void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data
     std::string fileName,
         nombreUnico = obtenerNombreUnico(
             baseFolder, "Map", ".ppm");
-
     //guardado del mapa actual de la ejecución
     SaveMapFile(baseFolder, nombreUnico, size, size, data);
     SaveInfo_CSV_PatternsUsed(baseFolder, ".csv", dataPattern, fileName);
     SaveTime(baseFolder, nombreUnico, duration, backtrackingUse);
-    
 }

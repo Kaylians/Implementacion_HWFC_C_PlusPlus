@@ -26,7 +26,8 @@ bool generate_Map( std::string mode,
      bool backtrackingActive,
      std::vector<std::vector<Pattern>>& H_patternArray,
      std::string& Base_Folder,
-     std::string& Example_Map
+     std::string& Example_Map,
+    long pattern_time
 );
 
 #endif 
