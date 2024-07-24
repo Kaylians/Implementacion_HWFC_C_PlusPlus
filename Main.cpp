@@ -266,7 +266,7 @@ int main(int argc, char* argv[]) {
         } while (Map_Requested_i > Map_Requested_completed_i);
     }
 
-    PerformMetrics(Output_Folder, Desire_Size);
+    PerformMetrics(Output_Folder, Desire_Size, Map_Size);
 
     return 0;
 }

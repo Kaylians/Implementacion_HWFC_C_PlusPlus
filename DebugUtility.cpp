@@ -78,7 +78,10 @@ void printMap(const std::vector<std::vector<int>>& unCollapseMap, int size, int 
                     }
                 }
                 else if (unCollapseMap[j + i * size].size() == posibi) {
-                    std::cout << "  " << "||";
+                    if (SearchRPP(RPP, j + i * size) && MarkRPP) {
+                        std::cout << "()" << "||";
+                    }else
+                        std::cout << "  " << "||";
                 }
                 else if (unCollapseMap[j + i * size].size() < posibi) {
                     if (unCollapseMap[j + i * size].size() == 0)

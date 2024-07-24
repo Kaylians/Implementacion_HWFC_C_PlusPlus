@@ -12,15 +12,18 @@
 #include <cmath>
 
 int hammingMetric(const std::vector<Pixel>& Map1, const std::vector<Pixel>& Map2) {
-    int coincidence = 0;
+    int difference = 0;
     if (Map1.size() != Map2.size())
         return 0;
     for (int i = 0; i < Map1.size(); i++) {
         if (Map1[i] == Map2[i]) {
-            coincidence++;
+            
+        }
+        else {
+            difference++;
         }
     }
-    return coincidence;
+    return difference;
 }
 void ConvertValuesToPercent(std::vector<float>& values, bool includeIncompatibilityPercent) {
     std::vector<float> tmp_values;
@@ -37,9 +40,14 @@ void ConvertValuesToPercent(std::vector<float>& values, bool includeIncompatibil
         tmp_weight = values[i];
         totalWeight += tmp_weight;
     }
+    float test = 0.0f;
+
     for (int i = 0; i < lenght; i++) {
-        tmp_values.push_back((values[i] / totalWeight) * 100);
+        tmp_values.push_back((values[i] / totalWeight));
+        test += (values[i] / totalWeight);
     }
+    //std::cout << test << std::endl;
+    //stopExecute(5000, "test");
     values = tmp_values;
 }
 double KL_Formula(double p, double q) {
@@ -80,18 +88,18 @@ double KL_Divergence(std::vector<Pattern> P, std::vector<Pattern> Q) {
                     Q_values.push_back(Q[j].weight);
                     matches.push_back(P[i]);
                 }
-                
+
             }
         }
     }
-
+    //std::cout << P_values.size() << " " << Q_values.size() << " parecidos" << matches.size() << std::endl;
     KL_Divergence_UnmatchPercentAdd(P, matches, P_values);
     KL_Divergence_UnmatchPercentAdd(Q, matches, Q_values);
     ConvertValuesToPercent(P_values, false);
     ConvertValuesToPercent(Q_values, false);
 
     if (P_values.size() != Q_values.size()) {
-        ControlString("ERROR nigga, P y Q no son iguales para la metrica");
+        ControlString("ERROR, P y Q no son iguales para la metrica");
     }
     else {
         for (int i = 0; i < P_values.size(); i++) {

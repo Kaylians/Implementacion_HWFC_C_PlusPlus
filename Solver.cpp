@@ -44,9 +44,13 @@ int calculate_Entropy_around_window(const std::vector<std::vector<int>>& unColla
 }
 
 //función para definir una ventana alrededor del area con menor entropia en los puntos entregados 
-bool define_windowArea_with_lowest_entropy(const std::vector<std::vector<int>>& Map, const std::vector<int>& Propagation_Pos, std::vector<int>& New_Window_Area, const int N_Pattern_Size, const int Y_Map_size, int& window_origin_pos) {
+bool define_windowArea_with_lowest_entropy(const std::vector<std::vector<int>>& Map, const std::vector<int>& Propagation_Pos, std::vector<int>& New_Window_Area, const int N_Pattern_Size, const int Y_Map_size, int& window_origin_pos, bool get_best_window_only) {
 
-    std::vector<int> tmp_new_window, posible_window;
+    if (Propagation_Pos.empty())
+        return false;
+
+    std::vector<int> tmp_new_window, best_window;
+    std::vector<std::vector<int>> posible_window;
 
     int current_lowest_entropy = -1, tmp_lowest_entropy = 0, pos;
     bool  up = false, down = false, right = false, left = false;
@@ -66,54 +70,69 @@ bool define_windowArea_with_lowest_entropy(const std::vector<std::vector<int>>& 
         if (pos % Y_Map_size < Y_Map_size - (N_Pattern_Size - 1))
             right = true;
         tmp_lowest_entropy = 0;
+
         if (up) {
             if (left) {
                 tmp_lowest_entropy = calculate_Entropy_around_window(Map, tmp_new_window, N_Pattern_Size, Y_Map_size, pos, -(N_Pattern_Size - 1), 0, -(N_Pattern_Size - 1), 0);
-                if (tmp_lowest_entropy != 0)
+                if (tmp_lowest_entropy != 0) {
+                    posible_window.push_back(tmp_new_window);
                     if ((current_lowest_entropy > tmp_lowest_entropy) || current_lowest_entropy == -1) {
                         current_lowest_entropy = tmp_lowest_entropy;
-                        posible_window = tmp_new_window;
+                        best_window = tmp_new_window;
                         window_origin_pos = pos;
                     }
+                }
                 tmp_lowest_entropy = 0;
             }
             if (right) {
                 tmp_lowest_entropy = calculate_Entropy_around_window(Map, tmp_new_window, N_Pattern_Size, Y_Map_size, pos, -(N_Pattern_Size - 1), 0, 0, N_Pattern_Size - 1);
-                if (tmp_lowest_entropy != 0)
+                if (tmp_lowest_entropy != 0){
+                    posible_window.push_back(tmp_new_window);
                     if ((current_lowest_entropy > tmp_lowest_entropy) || current_lowest_entropy == -1) {
                         current_lowest_entropy = tmp_lowest_entropy;
-                        posible_window = tmp_new_window;
+                        best_window = tmp_new_window;
                         window_origin_pos = pos;
                     }
+                }
                 tmp_lowest_entropy = 0;
             }
         }
         if (down) {
             if (left) {
                 tmp_lowest_entropy = calculate_Entropy_around_window(Map, tmp_new_window, N_Pattern_Size, Y_Map_size, pos, 0, N_Pattern_Size - 1, -(N_Pattern_Size - 1), 0);
-                if (tmp_lowest_entropy != 0)
+                if (tmp_lowest_entropy != 0) {
+                    posible_window.push_back(tmp_new_window);
                     if ((current_lowest_entropy > tmp_lowest_entropy) || current_lowest_entropy == -1) {
                         current_lowest_entropy = tmp_lowest_entropy;
-                        posible_window = tmp_new_window;
+                        best_window = tmp_new_window;
                         window_origin_pos = pos;
                     }
+                }
                 tmp_lowest_entropy = 0;
             }
             if (right) {
                 tmp_lowest_entropy = calculate_Entropy_around_window(Map, tmp_new_window, N_Pattern_Size, Y_Map_size, pos, 0, N_Pattern_Size - 1, 0, N_Pattern_Size - 1);
-                if (tmp_lowest_entropy != 0)
+                if (tmp_lowest_entropy != 0) {
+                    posible_window.push_back(tmp_new_window);
                     if ((current_lowest_entropy > tmp_lowest_entropy) || current_lowest_entropy == -1) {
                         current_lowest_entropy = tmp_lowest_entropy;
-                        posible_window = tmp_new_window;
+                        best_window = tmp_new_window;
                         window_origin_pos = pos;
                     }
+                }
                 tmp_lowest_entropy = 0;
             }
         }
+ 
     }
 
     if (posible_window.size() > 0) {
-        New_Window_Area = posible_window;
+        if (get_best_window_only) {
+            New_Window_Area = best_window;
+        }
+        else {
+            New_Window_Area = posible_window[getRandom(0,posible_window.size())];
+        }
         return true;
     }
     else {
@@ -207,12 +226,14 @@ void Find_Valid_Patterns(std::vector<std::vector<int>>& unCollapseMap, std::vect
         contains = true;
         for (int i = 0; i < Window_Area.size(); i++) {
             if (All_Patterns[z].pixelesCoo[i] == -1) {
-                break;
+                 
             }
-            auto it = std::find(unCollapseMap[Window_Area[i]].begin(), unCollapseMap[Window_Area[i]].end(), All_Patterns[z].pixelesCoo[i]);
-            if (it == unCollapseMap[Window_Area[i]].end()) {
-                contains = false;
-                break;
+            else {
+                auto it = std::find(unCollapseMap[Window_Area[i]].begin(), unCollapseMap[Window_Area[i]].end(), All_Patterns[z].pixelesCoo[i]);
+                if (it == unCollapseMap[Window_Area[i]].end()) {
+                    contains = false;
+                    break;
+                }
             }
         }
         if (contains) {
@@ -226,7 +247,8 @@ void update_Propagation_Around_Window(std::vector<std::vector<int>>& Map, std::v
     if (Valid_Patterns.size() > 0) {
         for (int i = 0; i < Window_Area.size(); i++) {
             for (int j = 0; j < Valid_Patterns.size(); j++) {
-                Map[Window_Area[i]].push_back(Valid_Patterns[j].pixelesCoo[i]);
+                if(Valid_Patterns[j].pixelesCoo[i] != -1 )
+                    Map[Window_Area[i]].push_back(Valid_Patterns[j].pixelesCoo[i]);
             }
         }
     }  
@@ -248,7 +270,7 @@ void propagation(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>&
 
     bool up = false, down = false, right = false, left = false;
 
-    Valid_Patterns.clear();
+    
 
 
     for (int i = 0; i < Pos_Array.size(); i++) {
@@ -323,7 +345,11 @@ bool Tile_and_Pattern_are_Compatible(const std::vector<int>& Tile_Map, const int
             return true;
     return false;
 }
-bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& Window_Area, std::vector<Pattern>& Valid_Patterns, const int posibleTilesN, std::vector<Pattern>& usedPatternArray) {
+bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& Window_Area, std::vector<Pattern>& Valid_Patterns, const int posibleTilesN, std::vector<Pattern>& usedPatternArray, bool useRandom) {
+
+    if (Valid_Patterns.empty()) {
+        return false;
+    }
 
     //definicion de casilla sin colapsar para patrones de alta jerarquia
     std::vector<int> unCollapseNode;
@@ -341,13 +367,10 @@ bool Collapse(std::vector<std::vector<int>>& unCollapseMap, std::vector<int>& Wi
     }
     
     do {
-        
-        if (Valid_Patterns.empty()) {
-            return false;
-        }
-
-        //num = getRandom(0, Valid_Patterns.size());
-        num = getRandomPatternWeighted(Weight);
+        if(useRandom)
+            num = getRandom(0, Valid_Patterns.size());
+        else
+            num = getRandomPatternWeighted(Weight);
         newPattern = Valid_Patterns[num];
 
         valid_Pattern = true;
@@ -409,16 +432,21 @@ bool Request_Backtracking(
     const std::vector<Pixel>& Posible_Tiles, std::vector<int>& count_iteration_per_hierarchy,
     const int Map_Size, int& BT_step, int& backtrackUses, int& current_hierarchy_iteration,
     bool& randomStart, const bool backtrackingActive,
-    std::vector<Pattern>& usedPatternArray
+    std::vector<Pattern>& usedPatternArray,
+    std::vector<std::vector<Pattern>>& BT_usedPatternArray,
+    int& fail_generation,
+    std::vector<int>& Window_area,
+    std::vector<Pattern>& ValidPatterns
     ) {
 
     if (backtrackingActive) {
         if(backtrackUses < 200)
-            
             if (BT_step - backtrackUses > 0) {
                 BT_step = BT_step - backtrackUses;
                 UnCollapseMap = BT_UnCollapseMap[BT_step - 1];
                 Propagation_Pos = BT_Propagation_Pos[BT_step - 1];
+                usedPatternArray = BT_usedPatternArray[BT_step - 1];
+                BT_usedPatternArray.resize(BT_step - 1);
                 BT_UnCollapseMap.resize(BT_step - 1);
                 BT_Propagation_Pos.resize(BT_step - 1);
                 backtrackUses++;
@@ -426,15 +454,21 @@ bool Request_Backtracking(
                 return true;
             }
     }
-
     initialize_Map(UnCollapseMap, Posible_Tiles, Map_Size);
     randomStart = true;
+    fail_generation++;
     BT_step = 0;
     backtrackUses = 0;
     current_hierarchy_iteration = 0;
     Propagation_Pos.clear();
+    Window_area.clear();
+    ValidPatterns.clear();
     Banned_Propagation_Pos.clear();
     usedPatternArray.clear();
+    BT_Propagation_Pos.clear();
+    BT_UnCollapseMap.clear();
+    BT_usedPatternArray.clear();
+
 
     for (int i = 0; i < count_iteration_per_hierarchy.size(); i++) {
         count_iteration_per_hierarchy[i] = 0;
@@ -475,7 +509,7 @@ bool generate_Map(std::string mode,
     initialize_Map(UnCollapseMap, Posible_Tiles, Map_Size);
 
     //Variables para backtracking
-    std::vector<std::vector<std::vector<int>>> BT_UnCollapseMap; std::vector<std::vector<int>> BT_Propagation_Pos;
+    std::vector<std::vector<std::vector<int>>> BT_UnCollapseMap; std::vector<std::vector<int>> BT_Propagation_Pos; std::vector<std::vector<Pattern>> BT_usedPatternArray;
     int BT_step = 0, backStep = 0, backtrackUses = 0, totalBacktracking = 0;
 
     //variables para el conteo de iteraciones realizadas
@@ -495,7 +529,7 @@ bool generate_Map(std::string mode,
         Pattern_size_per_hierarchy.push_back(All_Pattern_Array[i].front().N);
     }
     if (mode == "HWFC") {
-        max_iteration_per_hierarchy[1] = 7;
+        max_iteration_per_hierarchy[1] = 1;
     }
 
     //Inicio del Cronometro
@@ -503,28 +537,36 @@ bool generate_Map(std::string mode,
     auto start = std::chrono::high_resolution_clock::now(); 
     std::cout << "Iniciando creacion de nuevo mapa." << std::endl;
 
-    bool randomStart = true, colapse_try = false, window_defined = false, engage_BT = false, try_skip_next_hierarchy = false;
-    int general_testing_stop_time = 0;
+    bool randomStart = true, colapse_try = false, window_defined = false, engage_BT = false, get_best_entropy = false, useRandom = false, usePropagation = true;
+    int general_testing_stop_time = 100;
     int initial_Pattern_size_Helper = -1;
+    int fail_generation = 0;
     
 
     // Ruta: cd /mnt/d/Memoria\ HWFC/Code/test2/src
     
     //Ciclo iterativo del algoritmo
     while (!mapCompleted(UnCollapseMap)) {
+        
+        //std::cout << "//////////////////////////////////" << std::endl;
+        //std::cout <<"El tamaño de patron actual es: "<< current_hierarchy_iteration << std::endl;
+        //std::cout << "//////////////////////////////////" << std::endl;
+
         //cambio de jerarquia para MWFC y HWFC si es que ya se pusieron X cantidad de patrones en un nivel, si se llega al maximo del minimo, se activa el backtracking
         if (mode == "HWFC" || mode == "MWFC") {
             if (max_iteration_per_hierarchy[current_hierarchy_iteration] <= count_iteration_per_hierarchy[current_hierarchy_iteration]) {
                 Banned_Propagation_Pos.clear();
-                if (current_hierarchy_iteration < All_Pattern_Array.size() - 1)
+                if (current_hierarchy_iteration < All_Pattern_Array.size() - 1) {
                     current_hierarchy_iteration++;
-                else 
-                    Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray);
+                }
+                else
+                    Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray, BT_usedPatternArray, fail_generation, Window_Area, ValidPatterns);
             }
         }
         else if (max_iteration_per_hierarchy[current_hierarchy_iteration] <= count_iteration_per_hierarchy[current_hierarchy_iteration]) {
-            Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray);
+            Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray, BT_usedPatternArray, fail_generation, Window_Area, ValidPatterns);
         }
+        ValidPatterns.clear();
         //SELECCION
         if (randomStart) {
             //si es que el patron de mayor tamaño al mapa, aborta la ejecución
@@ -545,34 +587,48 @@ bool generate_Map(std::string mode,
                 ValidPatterns.clear();
                 ValidPatterns.push_back(selected_pattern_to_collapse);
                 //Definición de una ventana alrededor del punto inicial  
-            } while (!define_windowArea_with_lowest_entropy(UnCollapseMap, Propagation_Pos, Window_Area, initial_Pattern_size_Helper, Map_Size, window_origin_pos));
+            } while (!define_windowArea_with_lowest_entropy(UnCollapseMap, Propagation_Pos, Window_Area, initial_Pattern_size_Helper, Map_Size, window_origin_pos, false));
         }
         //seleccion guiada por la entropia
         else {
             window_defined = false;
+            //update_all_valid_propagation_pos(UnCollapseMap, Propagation_Pos, Banned_Propagation_Pos, Pattern_size_per_hierarchy[current_hierarchy_iteration], Map_Size);
             do {
                 //definir una area con la entropia más baja
-                if (define_windowArea_with_lowest_entropy(UnCollapseMap, Propagation_Pos, Window_Area, Pattern_size_per_hierarchy[current_hierarchy_iteration], Map_Size, window_origin_pos))
-                    window_defined = true; 
-                else 
-                    Propagation_Pos.clear();
+                if (mode == "MWFC" && All_Pattern_Array[current_hierarchy_iteration].front().highPattern) {
+                    get_best_entropy = false;
+                }
+                else {
+                    get_best_entropy = true;
+                }
 
-                //si no hay una ventana o puntos disponibles, se baja de jerarquia o se activa el backtracking
+                if (define_windowArea_with_lowest_entropy(UnCollapseMap, Propagation_Pos, Window_Area, Pattern_size_per_hierarchy[current_hierarchy_iteration], Map_Size, window_origin_pos, get_best_entropy)) {
+                    window_defined = true;
+                }
+                else {
+                    Propagation_Pos.clear();
+                }
+
                 if (Propagation_Pos.empty()) {
                     Banned_Propagation_Pos.clear();
                     if (current_hierarchy_iteration < All_Pattern_Array.size() - 1) {
+                        stopExecute(1000, "no quedan posiciones de propagacion validas, saltando jerarquia");
                         current_hierarchy_iteration++;
                         update_all_valid_propagation_pos(UnCollapseMap, Propagation_Pos, Banned_Propagation_Pos, Pattern_size_per_hierarchy[current_hierarchy_iteration], Map_Size);
+                        if (printMapBool) {
+                            printMap(UnCollapseMap, Map_Size, Posible_Tiles.size(), Propagation_Pos, true);
+                            stopExecute(general_testing_stop_time, "Collapse complete");
+                        }
                     }
                     else {
-                        Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray);
+                        Request_Backtracking(UnCollapseMap, BT_UnCollapseMap, Propagation_Pos, BT_Propagation_Pos, Banned_Propagation_Pos, Posible_Tiles, count_iteration_per_hierarchy, Map_Size, BT_step, backtrackUses, current_hierarchy_iteration, randomStart, backtrackingActive, usedPatternArray, BT_usedPatternArray, fail_generation, Window_Area, ValidPatterns);
                     }
                 }
-
                 //Definición de una ventana alrededor del punto inicial  
-                if(window_defined)
+                if (window_defined) {
                     Find_Valid_Patterns(UnCollapseMap, Window_Area, All_Pattern_Array[current_hierarchy_iteration], ValidPatterns);
-
+                    //ControlPoint(ValidPatterns.size());
+                }
             } while (!window_defined);
         }
         
@@ -583,20 +639,35 @@ bool generate_Map(std::string mode,
 
             do {                    
                 if (!ValidPatterns.empty()) {
-                    if (Collapse(UnCollapseMap, Window_Area, ValidPatterns, Posible_Tiles.size(), usedPatternArray)) {
+
+                    if (mode == "MWFC" && All_Pattern_Array[current_hierarchy_iteration].front().highPattern) {
+                        usePropagation = false;
+                    }
+                    else {
+                        usePropagation = true;
+                    }
+
+                    if (mode == "MWFC" && All_Pattern_Array[current_hierarchy_iteration].front().highPattern) {
+                        useRandom = true;
+                    }
+                    else useRandom = false;
+
+                    if (Collapse(UnCollapseMap, Window_Area, ValidPatterns, Posible_Tiles.size(), usedPatternArray, useRandom)) {
                         count_iteration_per_hierarchy[current_hierarchy_iteration]++;
                         colapse_try = false;
                         //guardado del estado actual del mapa para uso en backtracking
                         if (backtrackingActive) {
                             BT_UnCollapseMap.push_back(UnCollapseMap);
                             BT_Propagation_Pos.push_back(Propagation_Pos);
+                            BT_usedPatternArray.push_back(usedPatternArray);
                             BT_step++;
                         }
                         if (printMapBool) {
                             printMap(UnCollapseMap, Map_Size, Posible_Tiles.size(), Propagation_Pos, true);
                             stopExecute(general_testing_stop_time, "Collapse complete");
                         }
-                        if (ValidPatterns.front().highPattern && current_hierarchy_iteration == 0) {
+                        if (mode == "HWFC" && ValidPatterns.front().highPattern && current_hierarchy_iteration == 0) {
+                            stopExecute(1000, "salto de jerarquia por patron alto");
                             current_hierarchy_iteration++;
                             //propagation(UnCollapseMap, Window_Area, All_Pattern_Array[current_hierarchy_iteration + 1], ValidPatterns, Map_Size, Posible_Tiles.size());
                             initial_Pattern_size_Helper = -1;
@@ -605,39 +676,24 @@ bool generate_Map(std::string mode,
                     }
                     else {
                         Remove_Point_from_Propagation(window_origin_pos, Propagation_Pos);
+                        Banned_Propagation_Pos.push_back(window_origin_pos);
                         colapse_try = false;
                         Window_Area.clear();
                     }
                 }
                 else {
-                    if (try_skip_next_hierarchy) {
-                        if (tmp_current_hierarchy_iteration < All_Pattern_Array.size() - 1) {
-                            tmp_current_hierarchy_iteration++;
-                            update_all_valid_propagation_pos(UnCollapseMap, Propagation_Pos, Banned_Propagation_Pos, Pattern_size_per_hierarchy[tmp_current_hierarchy_iteration], Map_Size);
-                            define_windowArea_with_lowest_entropy(UnCollapseMap, Propagation_Pos, Window_Area, Pattern_size_per_hierarchy[tmp_current_hierarchy_iteration], Map_Size, window_origin_pos);
-                            Find_Valid_Patterns(UnCollapseMap, Window_Area, All_Pattern_Array[current_hierarchy_iteration], ValidPatterns);
-                        }
-                        else {
-                            colapse_try = false;
-                            Remove_Point_from_Propagation(window_origin_pos, Propagation_Pos);
-                            Banned_Propagation_Pos.push_back(window_origin_pos);
-                            Window_Area.clear();
-                            ValidPatterns.clear();
-                        }
-                    }
-                    else {
-                        colapse_try = false;
-                        Remove_Point_from_Propagation(window_origin_pos, Propagation_Pos);
-                        Banned_Propagation_Pos.push_back(window_origin_pos);
-                        Window_Area.clear();
-                    }
+                    colapse_try = false;
+                    Remove_Point_from_Propagation(window_origin_pos, Propagation_Pos);
+                    Banned_Propagation_Pos.push_back(window_origin_pos);
+                    Window_Area.clear();
                 }
             } while (colapse_try);  
         }
 
         ///////// PROPAGACION  //verificación de puntos con entropia mayor a 0 para iterar en la propagacion 
         if (Window_Area.size() > 0) {
-            propagation(UnCollapseMap, Window_Area, All_Pattern_Array[current_hierarchy_iteration], ValidPatterns, Map_Size, Posible_Tiles.size());
+            if(usePropagation)
+                propagation(UnCollapseMap, Window_Area, All_Pattern_Array[current_hierarchy_iteration], ValidPatterns, Map_Size, Posible_Tiles.size());
             loadPositionOnArray(Propagation_Pos, Window_Area);
             if (printMapBool) {
                 printMap(UnCollapseMap, Map_Size, Posible_Tiles.size(), Propagation_Pos, true);
@@ -679,7 +735,8 @@ bool generate_Map(std::string mode,
         }
         std::cout << "Guardando y procesando la informacion en archivos..." << std::endl;
 
-        SaveMapAndTime(Base_Folder, Pixel_Vector_Out, usedPatternArray, mode + "_" + nameWithoutExt, Map_Size, Posible_Tiles, duration, backtrackUses);
+        SaveMapAndTime(Base_Folder, Pixel_Vector_Out, usedPatternArray, mode + "_" + nameWithoutExt, Map_Size, Posible_Tiles, duration, backtrackUses, fail_generation);
+        std::cout << "Intentos de generación fallidos: " << fail_generation << std::endl;
         std::cout << "Guardando completado." << std::endl;
 
         //dibujar los patrones en una imagen aparte

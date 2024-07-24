@@ -4,6 +4,7 @@
 #include "Metrics.h"
 #include "DebugUtility.h"
 #include <locale>
+#include <iomanip> 
 namespace fs = std::filesystem;
 struct Comma final : std::numpunct<char>
 {
@@ -167,12 +168,13 @@ void infoPatternUpdateIDPython(std::vector<std::vector<Pattern>>& H_patternArray
 
 }
 
-void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles, const int size, const std::vector<int>& desire_size) {
+void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_size, bool rotMirror) {
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
     std::vector<Pattern> pattArray;
     //seperacion de la imagen en multiples patrones
     //for (int y = 0; y <= inputImageHeight - N; y++)
+    int size = sqrt(cooPixelPattern.size());
     int pos = 0;
     for (int z = 0; z < desire_size.size(); z++) {
         pattArray.clear();
@@ -190,8 +192,10 @@ void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::
                 tmpCooVector.clear();
             }
         }
-        //findUniquePythonPattern(pattArray);
-        //makeMirroRotPythonPattern(pattArray);
+        if (rotMirror) {
+            findUniquePythonPattern(pattArray);
+            makeMirroRotPythonPattern(pattArray);
+        }
         findUniquePythonPattern(pattArray);
         for (int a = 0; a < pattArray.size(); a++)
             H_patternArray[H_patternArray.size()-desire_size.size() + z].push_back(pattArray[a]);
@@ -267,7 +271,7 @@ std::vector<std::vector<int>> readFiles(const std::vector<std::string>& filePath
     return allNumbers;
 }
 
-void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std::vector<std::vector<int>>& patterns, bool is_high_pattern) {
+void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std::vector<std::vector<int>>& patterns, bool is_high_pattern, bool rotMirror) {
     std::vector<Pattern> tmp_patternArray;
 
     for (int i = 0; i < patterns.size(); i++) {
@@ -279,12 +283,16 @@ void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std:
         newPattern.weight = 1;
         tmp_patternArray.push_back(newPattern);
     }
+    if (rotMirror) {
+        findUniquePythonPattern(tmp_patternArray);
+        makeMirroRotPythonPattern(tmp_patternArray);
+    }
     H_patternArray.push_back(tmp_patternArray);
     tmp_patternArray.clear();
 }
 
 //obtener la información de los patrones de python
-void read_Example_Folder(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size) {
+void read_Example_Folder(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles,const std::vector<int>& desire_Size) {
 
     std::vector<std::string> TOP_HIERARCHIES;
     std::vector<std::string> MID_HIERARCHIES;
@@ -292,25 +300,45 @@ void read_Example_Folder(const std::string& mode, std::vector<std::vector<Patter
 
     generate_File_Paths_Folder(TOP_HIERARCHIES, MID_HIERARCHIES, BASE_EXAMPLES);
     // Leer los archivos y extraer los números
-    if (mode == "HWFC") {
-        std::vector<std::vector<int>> top_Pattern = readFiles(TOP_HIERARCHIES);
-        std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
-        H_patternArray.reserve(2 + desire_Size.size());
-        load_H_patternArray(H_patternArray, top_Pattern, true);
-        load_H_patternArray(H_patternArray, mid_Pattern, true);
+    std::vector<std::vector<int>> top_Pattern = readFiles(TOP_HIERARCHIES);
+    std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
+    std::vector<std::vector<int>> low_Pattern = readFiles(BASE_EXAMPLES);
 
-        int resize = H_patternArray.size() + desire_Size.size();
-        H_patternArray.resize(resize);
+    if (mode == "HWFC") {
+        H_patternArray.reserve(2 + desire_Size.size());
+        load_H_patternArray(H_patternArray, top_Pattern, true, false);
+        load_H_patternArray(H_patternArray, mid_Pattern, false, false);
+    }
+    else if (mode == "MWFC") {
+        int aux = top_Pattern.front().size();
+        std::vector<std::vector<int>> top_Pattern1;
+        std::vector<std::vector<int>> top_Pattern2;
+        for (int i = 0; i < top_Pattern.size();i++) {
+            if (aux == top_Pattern[i].size()) {
+                top_Pattern1.push_back(top_Pattern[i]);
+            }
+            else {
+                top_Pattern2.push_back(top_Pattern[i]);
+            }
+        }
+
+        H_patternArray.reserve(3 + desire_Size.size());
+
+        load_H_patternArray(H_patternArray, top_Pattern1, true, false);
+        load_H_patternArray(H_patternArray, top_Pattern2, true, false);
+        load_H_patternArray(H_patternArray, mid_Pattern, true, false);
     }
     else {
         H_patternArray.reserve(desire_Size.size());
-        int resize = desire_Size.size();
-        H_patternArray.resize(resize);
     }
-    std::vector<std::vector<int>> low_Pattern = readFiles(BASE_EXAMPLES);
-    
+    int resize = H_patternArray.size() + desire_Size.size();
+    H_patternArray.resize(resize);
+
     for (int i = 0; i < low_Pattern.size(); i++) {
-        definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, sqrt(low_Pattern[i].size()), desire_Size);
+        if(mode == "WFC")
+            definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, desire_Size, true);
+        else
+            definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, desire_Size, false);
     }
 }
 
@@ -552,7 +580,7 @@ bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string
     return true;
 }
 
-bool SaveInfo_CSV_Hamming(const std::string& carpetaBase, const std::vector<std::string>& MapNames, const std::vector<std::vector<int>>& similarity) {
+bool SaveInfo_CSV_Hamming(const std::string& carpetaBase, const std::vector<std::string>& MapNames, const std::vector<std::vector<float>>& similarity) {
     if (!crearCarpeta(carpetaBase)) {
         return false;
     }
@@ -570,8 +598,16 @@ bool SaveInfo_CSV_Hamming(const std::string& carpetaBase, const std::vector<std:
                 else if (j == 0) {
                     archivo << MapNames[i-1] << "h;";
                 }
+                else if (similarity[i - 1][j - 1] == -1) {
+                    archivo << ";";
+                }
                 else {
-                    archivo << similarity[i-1][j-1] << ";";
+                    std::ostringstream oss;
+                    oss << std::fixed << std::setprecision(6) << similarity[i - 1][j - 1]; // Ajusta la precisión según sea necesario
+                    std::string aux_str = oss.str();
+                    std::replace(aux_str.begin(), aux_str.end(), '.', ',');
+
+                    archivo << aux_str << ";";
                 }
             }
             archivo << "\n";
@@ -607,6 +643,9 @@ bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase)
                     else if (j == 0) {
                         archivo << MapNames[i - 1] << ";";
                     }
+                    else if (i <= j) {
+                        archivo << ";";
+                    }
                     else {
                         LoadedFile1 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[i - 1]);
                         LoadedFile2 = cargarVectorDesdeArchivoCSV(N[z], carpetaBase, MapNames[j - 1]);
@@ -624,23 +663,31 @@ bool SaveInfo_CSV_KLD(const std::vector<int>& N, const std::string& carpetaBase)
     return true;
 }
 
-void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N) {
+void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N, const int Map_size) {
     //realizar hamming
     std::vector<std::string> SavePPMNames = ObtenerNombresArchivos(baseFolder, "Map", ".ppm");
     std::vector<Pixel> Map1, Map2; //std::vector<Pixel> Map1 = simpleHammingPPM( + folder +"/" + nombreUnico);
     std::string Map1_Name, Map2_Name;
-    std::vector<std::vector<int>> similarity;
-    std::vector<int> tmp_simil;
-
+    std::vector<std::vector<float>> similarity;
+    std::vector<float> tmp_simil;
+    float aux = 0.0f;
     for (int i = 0; i < SavePPMNames.size(); i++) {
         Map1_Name = baseFolder + "/" + SavePPMNames[i];
         Map1 = simpleHammingPPM(Map1_Name);
         tmp_simil.clear();
         for (int j = 0; j < SavePPMNames.size(); j++) {
-            Map2_Name = baseFolder + "/" + SavePPMNames[j];
-            Map2 = simpleHammingPPM(Map2_Name);
-            int aux = hammingMetric(Map1, Map2);
-            tmp_simil.push_back(aux);
+            if(i == j)
+                tmp_simil.push_back(-1);
+            else if (i <= j)
+                tmp_simil.push_back(-1);
+            else {
+                Map2_Name = baseFolder + "/" + SavePPMNames[j];
+                Map2 = simpleHammingPPM(Map2_Name);
+                int a = hammingMetric(Map1, Map2);
+                int b = (Map_size * Map_size);
+                aux = static_cast<float>(a)/ static_cast<float>(b);
+                tmp_simil.push_back(aux);
+            }
         }
         similarity.push_back(tmp_simil);
     }
@@ -651,7 +698,7 @@ void PerformMetrics(const std::string& baseFolder, const std::vector<int>& N) {
 
 }
 
-bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, const float& duration, const int& backtrackingUse) {
+bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, const float& duration, const int& backtrackingUse, const int fail_generation) {
     if (!crearCarpeta(carpetaBase)) {
         return false;
     }
@@ -666,7 +713,7 @@ bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, con
         return false;
     }
     ControlString("tiempo guardado");
-    archivo << nombreBase << ";" << duration << ";" << backtrackingUse << "\n";
+    archivo << nombreBase << ";" << duration << ";" << backtrackingUse << ";"<< fail_generation << "\n";
 
     // Verificar si ocurrieron errores durante la escritura
     if (archivo.bad()) {
@@ -679,12 +726,12 @@ bool SaveTime(const std::string& carpetaBase, const std::string& nombreBase, con
     return true;
 }
 
-void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const float& duration, const int& backtrackingUse) {
+void SaveMapAndTime(const std::string& baseFolder,const std::vector<Pixel>& data, const std::vector<Pattern>& dataPattern, const std::string mode, const int size, const std::vector<Pixel>& posibleTiles, const float& duration, const int& backtrackingUse, const int fail_generation) {
     std::string fileName,
         nombreUnico = obtenerNombreUnico(
             baseFolder, "Map", ".ppm");
     //guardado del mapa actual de la ejecución
     SaveMapFile(baseFolder, nombreUnico, size, size, data);
     SaveInfo_CSV_PatternsUsed(baseFolder, ".csv", dataPattern, fileName);
-    SaveTime(baseFolder, nombreUnico, duration, backtrackingUse);
+    SaveTime(baseFolder, nombreUnico, duration, backtrackingUse, fail_generation);
 }
