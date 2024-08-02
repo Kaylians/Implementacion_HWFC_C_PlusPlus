@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-void definePatternsHWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N);
+std::vector<Pattern> definePatternsHWFC(const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N);
 bool HPattValidTile(const int pos, const int X, const int Y, const int N);
 
 

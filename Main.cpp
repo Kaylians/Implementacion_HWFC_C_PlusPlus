@@ -205,10 +205,20 @@ int main(int argc, char* argv[]) {
     initializeRandomSeed();
 
     bool backtrackingActive = true, printMapBool;
-    //input_Boolean(backtrackingActive, "Usar backtracking ?");
-    input_Boolean(printMapBool, "Imprimir el mapa en la generación ?");
 
-    std::string Output_Folder = "generatedLevels/" + mode + "_size_" + std::to_string(Map_Size);
+    input_Boolean(printMapBool, "¿Mostrar el proceso de generación del mapa? ");
+    std::string Output_Folder_base = "generatedLevels/";
+    std::string Output_Folder = Output_Folder_base + mode + "_size_" + std::to_string(Map_Size) + "_" + Example_Map;
+
+    //crear carpeta base "generatedLevels para guardar todos los resultados"
+    try {
+        if (std::filesystem::create_directory(Output_Folder_base)) {
+            std::cout << "Carpeta creada exitosamente." << std::endl;
+        }
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error al crear la carpeta: " << e.what() << std::endl;
+    }
 
     std::vector<Pattern> patternArrayLow, patternArrayHigh;
     std::vector<std::vector<Pattern>> H_patternArray;
@@ -221,7 +231,8 @@ int main(int argc, char* argv[]) {
         fix_desire_size.clear();
     }
 
-    if (Example_Map == "folder") {
+    //separación del nombre reservado "Python" para efectuar lectura directa de los .txt usados en Python
+    if (Example_Map == "Python") {
         getPredefineTiles(Posible_Tiles);
         read_Example_Folder(mode, H_patternArray, Posible_Tiles, Desire_Size);
         infoPatternUpdateIDPython(H_patternArray);
@@ -236,27 +247,26 @@ int main(int argc, char* argv[]) {
     }
     //uso de imagen .ppm como ejemplo
     else { 
-        if (!read_Example_PPM(Example_Map, Image_Width, Image_Height, Pixel_Vector))
+        std::string folder = "examples/" + Example_Map;
+        if (!read_Example_PPM(folder, Image_Width, Image_Height, Pixel_Vector))
             exit(0);
         //defincion de las casillas
         define_Posible_Tiles(Pixel_Vector, Posible_Tiles);
 
         //DEFINICION DE LOS PATRONES
-        if (mode == "WFC") {
-            ControlString("Obtener patrones WFC");
-            definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Size);
-        }
-        else {
-            //Patrones de multiples tama�os
-            ControlString("Obtener patrones MWFC");
-            definePatternsWFC(patternArrayLow, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Size);
-        }
+        
         if (mode == "HWFC") {
             //patrones de multiples tama�os para uso alto
-            ControlString("Obtener patrones altos HWFC");
-            definePatternsHWFC(patternArrayHigh, Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Top_Size);
+            std::vector<Pattern> H_patt = definePatternsHWFC(Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Top_Size);
+            H_patternArray.push_back(H_patt);
         }
-        infoPatternUpdateID(patternArrayLow, patternArrayHigh);
+        std::vector<std::vector<Pattern>> patt;
+        patt = definePatternsWFC(Pixel_Vector, Posible_Tiles, Image_Height, Image_Width, Desire_Size);
+
+        for (int i = 0; i < patt.size(); i++) {
+            H_patternArray.push_back(patt[i]);
+        }
+        infoPatternUpdateIDPython(H_patternArray);
         //inicio del algoritmo y generación de la cantidad de mapas solicitados
         long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         do {

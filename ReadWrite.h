@@ -22,6 +22,8 @@ namespace fs = std::filesystem;
 
 void getPredefineTiles(std::vector<Pixel>& posibleTiles);
 
+void loadPatternInfo(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, std::vector<Pattern>& patternArrayHigh, std::vector<Pattern>& patternArrayLow, const std::vector<int>& desire_Size);
+
 //Función para la lectura directa de .txt
 void read_Example_Folder(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles, const std::vector<int>& desire_Size);
 

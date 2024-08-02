@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <set>
 #include <cmath>
 
 int hammingMetric(const std::vector<Pixel>& Map1, const std::vector<Pixel>& Map2) {
@@ -41,10 +42,11 @@ void ConvertValuesToPercent(std::vector<float>& values, bool includeIncompatibil
         totalWeight += tmp_weight;
     }
     float test = 0.0f;
-
+    //std::cout << "peso total: " << totalWeight << std::endl;
     for (int i = 0; i < lenght; i++) {
         tmp_values.push_back((values[i] / totalWeight));
-        test += (values[i] / totalWeight);
+        //std::cout << i << "tiene un valor de "<< values[i] << " el valor es: " << values[i] / totalWeight << std::endl;
+        //test += (values[i] / totalWeight);
     }
     //std::cout << test << std::endl;
     //stopExecute(5000, "test");
@@ -76,27 +78,44 @@ void KL_Divergence_UnmatchPercentAdd(std::vector<Pattern>& P, std::vector<Patter
     P_values.push_back(incompatibilityCounter);
 }
 double KL_Divergence(std::vector<Pattern> P, std::vector<Pattern> Q) {
-    std::vector<float> P_values, Q_values;
-    std::vector<Pattern> matches;
-    double result = 0.0;
-    //
-    for (int i = 0; i < P.size(); i++) {
-        for (int j = 0; j < Q.size(); j++) {
-            if (P[i].pixelesCoo.size() == Q[j].pixelesCoo.size()) {
-                if (P[i].compareCooPattern(Q[j].pixelesCoo)) {
-                    P_values.push_back(P[i].weight);
-                    Q_values.push_back(Q[j].weight);
-                    matches.push_back(P[i]);
-                }
 
-            }
-        }
+    
+    std::vector<float> P_values, Q_values;
+    std::vector<Pattern> matches, unmatches;
+    double result = 0.0;
+    float constant_value = 0.001f;
+
+    if (P.size() == 0 || Q.size() == 0) {
+        return result;
     }
+
+    int p = 0, q = 0;
+    do {
+        if (P[p].id == Q[q].id) {
+            P_values.push_back(P[p].weight);
+            Q_values.push_back(Q[q].weight);
+            p++;
+            q++;
+        }
+        else if (P[p].id < Q[q].id) {
+            P_values.push_back(P[p].weight);
+            Q_values.push_back(constant_value);
+            p++;
+        }
+        else {
+            P_values.push_back(constant_value);
+            Q_values.push_back(Q[q].weight);
+            q++;
+        }
+    } while (p < P.size() && q < Q.size());
+
     //std::cout << P_values.size() << " " << Q_values.size() << " parecidos" << matches.size() << std::endl;
-    KL_Divergence_UnmatchPercentAdd(P, matches, P_values);
-    KL_Divergence_UnmatchPercentAdd(Q, matches, Q_values);
+    //KL_Divergence_UnmatchPercentAdd(P, matches, P_values);
+    //KL_Divergence_UnmatchPercentAdd(Q, matches, Q_values);
+    
     ConvertValuesToPercent(P_values, false);
     ConvertValuesToPercent(Q_values, false);
+
 
     if (P_values.size() != Q_values.size()) {
         ControlString("ERROR, P y Q no son iguales para la metrica");

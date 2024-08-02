@@ -27,10 +27,10 @@ bool HPattValidTile(const int pos, const int X, const int Y, const int N) {
     return false;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
-void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N) {
+std::vector<Pattern> definePatternsHWFC(const std::vector<Pixel>& pixelVector, const std::vector<Pixel> posibleTiles, const int inputImageHeight, const int inputImageWidth, std::vector<int> N) {
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
-
+    std::vector<Pattern> hPattArray;
     int counter = 0, pos = 0;
 
     // X e Y dan el punto de inicio
@@ -80,4 +80,6 @@ void definePatternsHWFC(std::vector<Pattern>& hPattArray, const std::vector<Pixe
     }
 
     std::cout << "Patrones obtenidos de la imagen: " << hPattArray.size() << std::endl;
+
+    return hPattArray;
 }//inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer

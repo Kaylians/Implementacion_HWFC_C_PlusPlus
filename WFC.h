@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 bool comparePatternWFC(const Pattern& a, const Pattern& b);
-void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N);
+std::vector<std::vector<Pattern>> definePatternsWFC(const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N);
 void findUniquePatternCSV(std::vector<Pattern>& pattArray);
 void findUniquePattern(std::vector<Pattern>& pattArray);
 void makeMirroRotPattern(std::vector<Pattern>& pattArray);

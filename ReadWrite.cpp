@@ -101,17 +101,14 @@ void findUniquePythonPattern(std::vector<Pattern>& pattArray) {
                     }
                 }
             }
-            if(pattArray[i].midPattern)
-                pattArray[i].weight = weight * (pattArray[i].N * 2);
-            else
-                pattArray[i].weight = weight;
+            pattArray[i].weight = weight;
         }
         weight = 1;
     }
     for (int i = 0; i < pattArray.size(); i++)
         if (pattArray[i].pattern) {
             tmpPattArray.push_back(pattArray[i]);
-            tmpPattArray[tmpPattArray.size() - 1].id = tmpPattArray.size() - 1;
+            //tmpPattArray.back().id = tmpPattArray.size() - 1;
         }
     pattArray.clear();
     pattArray = tmpPattArray;
@@ -158,12 +155,11 @@ void makeMirroRotPythonPattern(std::vector<Pattern>& pattArray) {
 void infoPatternUpdateIDPython(std::vector<std::vector<Pattern>>& H_patternArray) {
     int id = 0;
     for (int i = 0; i < H_patternArray.size(); i++) {
+        findUniquePythonPattern(H_patternArray[i]);
         for (int j = 0; j < H_patternArray[i].size(); j++) {
-            H_patternArray[i][j].id = id;
+            H_patternArray[i][j].id = j;
             H_patternArray[i][j].hierarchy_Level = i;
-            id++;
         }
-        id = 0;
     }
 
 }
@@ -186,7 +182,7 @@ void definePatterns_PythonExamples(const std::vector<int>& cooPixelPattern,std::
                         tmpCooVector.push_back(cooPixelPattern[pos]);
                     }
                 }
-                Pattern newPattern(pattArray.size(), desire_size[z]);
+                Pattern newPattern(0, desire_size[z]);
                 newPattern.addPixelCooVector(tmpCooVector);
                 pattArray.push_back(newPattern);
                 tmpCooVector.clear();
@@ -291,6 +287,52 @@ void load_H_patternArray(std::vector<std::vector<Pattern>>& H_patternArray, std:
     tmp_patternArray.clear();
 }
 
+//funcion para reconstruir una imagen a partir del mapa generado
+void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& tiles) {
+    for (int i = 0; i < unCollapseMap.size(); i++) {
+        pixelVectorSalida.push_back(tiles[unCollapseMap[i].front()]);
+    }
+}
+
+// funcion adicional para imprimir los mapas de entrada como archivos .ppm (inutil para el algoritmo, uso de la imagenes para el paper)
+void reconstructMap_DataInput(std::vector<std::vector<int>>& Map, const std::vector<Pixel>& tiles) {
+    std::vector<Pixel> pixels;
+    int ancho, alto;
+    std::string rutaArchivo;
+
+    for (int z = 0; z < Map.size(); z++) {
+        pixels.clear();
+
+        for (int i = 0; i < Map[z].size(); i++) {
+            pixels.push_back(tiles[Map[z][i]]);
+        }
+
+        ancho = sqrt(pixels.size());
+        alto = ancho;
+
+        ControlPoint(ancho);
+
+        rutaArchivo = "Mapa_" + std::to_string(z) + ".ppm";
+
+        std::ofstream archivo(rutaArchivo, std::ios::binary);
+        if (!archivo.is_open()) {
+            std::cerr << "Error al abrir el archivo para escritura: " << rutaArchivo << std::endl;
+        }
+
+        archivo << "P6\n" << ancho << " " << alto << "\n255\n";
+        archivo.write(reinterpret_cast<const char*>(pixels.data()), pixels.size() * sizeof(Pixel));
+
+        // Verificar si ocurrieron errores durante la escritura
+        if (archivo.bad()) {
+            std::cerr << "Error al escribir en el archivo: " << rutaArchivo << std::endl;
+            archivo.close();
+        }
+
+        archivo.close();
+
+    }
+}
+
 //obtener la información de los patrones de python
 void read_Example_Folder(const std::string& mode, std::vector<std::vector<Pattern>>& H_patternArray, const std::vector<Pixel>& posibleTiles,const std::vector<int>& desire_Size) {
 
@@ -304,11 +346,15 @@ void read_Example_Folder(const std::string& mode, std::vector<std::vector<Patter
     std::vector<std::vector<int>> mid_Pattern = readFiles(MID_HIERARCHIES);
     std::vector<std::vector<int>> low_Pattern = readFiles(BASE_EXAMPLES);
 
+    //linea para imprimir los mapas de entrada como archivos .ppm
+    //reconstructMap_DataInput(low_Pattern, posibleTiles);
+
     if (mode == "HWFC") {
         H_patternArray.reserve(2 + desire_Size.size());
         load_H_patternArray(H_patternArray, top_Pattern, true, false);
         load_H_patternArray(H_patternArray, mid_Pattern, false, false);
     }
+    
     else if (mode == "MWFC") {
         int aux = top_Pattern.front().size();
         std::vector<std::vector<int>> top_Pattern1;
@@ -327,21 +373,19 @@ void read_Example_Folder(const std::string& mode, std::vector<std::vector<Patter
         load_H_patternArray(H_patternArray, top_Pattern1, true, false);
         load_H_patternArray(H_patternArray, top_Pattern2, true, false);
         load_H_patternArray(H_patternArray, mid_Pattern, true, false);
+        
     }
     else {
         H_patternArray.reserve(desire_Size.size());
     }
+    
     int resize = H_patternArray.size() + desire_Size.size();
     H_patternArray.resize(resize);
 
     for (int i = 0; i < low_Pattern.size(); i++) {
-        if(mode == "WFC")
-            definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, desire_Size, true);
-        else
-            definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, desire_Size, false);
+         definePatterns_PythonExamples(low_Pattern[i], H_patternArray, posibleTiles, desire_Size, false);
     }
 }
-
 //funcion para la lectura de la imagen de ejemplo
 bool read_Example_PPM(const std::string& exampleName, int& w, int& h, std::vector<Pixel>& pixeles) {
     std::ifstream archivo(exampleName, std::ios::binary);
@@ -384,12 +428,7 @@ bool writeImagePPM(const std::string& r, int w, int h, const std::vector<Pixel>&
     return true;
 }
 
-//funcion para reconstruir una imagen a partir del mapa generado
-void reconstructMap(std::vector<Pixel>& pixelVectorSalida, std::vector<std::vector<int>>& unCollapseMap, const std::vector<Pixel>& tiles) {
-    for (int i = 0; i < unCollapseMap.size(); i++) {
-        pixelVectorSalida.push_back(tiles[unCollapseMap[i].front()]);
-    }
-}
+
 
 //creación de una imagen con un mosaico de los patrones
 void createPatternDraw(const std::vector<Pattern>& pattern, std::vector<Pixel>& pixelVector, int& Y) {
@@ -488,6 +527,11 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const int N, const std::string&
             std::istringstream iss(linea);
             std::string token;
 
+            // Leer ID
+            if (std::getline(iss, token, delimiter)) {
+                pat.id = std::stoi(token);
+            }
+
             // Leer N
             if (std::getline(iss, token, delimiter)) {
                 pat.N = std::stoi(token);
@@ -512,6 +556,9 @@ std::vector<Pattern> cargarVectorDesdeArchivoCSV(const int N, const std::string&
     else {
         std::cerr << "Error al abrir el archivo en txt: " << rutaArchivo << std::endl;
     }
+
+    
+
     return vec;
 }
 
@@ -555,7 +602,7 @@ bool SaveInfo_CSV_PatternsUsed(const std::string& carpetaBase, const std::string
 
     if (archivo.is_open()) {
         for (const Pattern& pat : dataPattern) {
-            
+            archivo << pat.id << ";";
             archivo << pat.N << ";";
             archivo << pat.weight << ";";
             for (int i = 0; i < pat.pixelesCoo.size(); i++) {

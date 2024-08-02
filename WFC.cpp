@@ -110,9 +110,11 @@ void makeMirroRotPattern(std::vector<Pattern>& pattArray) {
     pattArray = finalPattArray;
 }
 //funcion para separar la imagen en los diferentes patrones que la componen
-void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N) {
+std::vector<std::vector<Pattern>> definePatternsWFC(const std::vector<Pixel>& pixelVector, const std::vector<Pixel>& posibleTiles, const int inputImageHeight, const int inputImageWidth, const std::vector<int>& N) {
     std::vector<Pixel> tmpVector;
     std::vector<int> tmpCooVector;
+    std::vector<Pattern> pattArray;
+    std::vector<std::vector<Pattern>> pattArray_out;
 
     //seperacion de la imagen en multiples patrones
     //for (int y = 0; y <= inputImageHeight - N; y++)
@@ -139,16 +141,11 @@ void definePatternsWFC(std::vector<Pattern>& pattArray, const std::vector<Pixel>
         }
         findUniquePattern(pattArray);
         makeMirroRotPattern(pattArray);
+        pattArray_out.push_back(pattArray);
+        pattArray.clear();
     }
 
-    std::cout << "Patrones base obtenidos de la imagen: " << pattArray.size() << std::endl;
-    std::sort(pattArray.begin(), pattArray.end(), comparePatternWFC);
-
-    for (int i = 0; i < pattArray.size(); i++) {
-        pattArray[i].id = i;
-    }
-
-    std::cout << "Patrones obtenidos de la imagen: " << pattArray.size() << std::endl;
+    return pattArray_out;
 }
 //inicializar el mapa de coordenadas con la cantidad de posibles formas que tienen los pixeles, representadas en integer
 void infoPatternUpdateID(std::vector<Pattern>& pLow, std::vector<Pattern>& pHigh) {
